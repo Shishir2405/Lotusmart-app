@@ -1,20 +1,20 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { StatusBar } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+import { AppProviders } from './src/app/providers';
+import { RootNavigator } from './src/app/navigation';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const onLayoutRootView = useCallback(async () => {
+    await SplashScreen.hideAsync();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <AppProviders onReady={onLayoutRootView}>
+      <StatusBar barStyle="dark-content" />
+      <RootNavigator />
+    </AppProviders>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
