@@ -69,7 +69,7 @@ export function Card({
     }).start();
   }, [scaleAnim]);
 
-  const cardStyle: ViewStyle[] = [
+  const cardStyle = [
     styles.card,
     {
       backgroundColor: theme.colors.surface,
@@ -78,7 +78,7 @@ export function Card({
     },
     shadowMap[elevation],
     style,
-  ];
+  ] as ViewStyle[];
 
   if (onPress) {
     return (
