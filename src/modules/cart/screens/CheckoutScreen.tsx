@@ -192,7 +192,7 @@ export function CheckoutScreen() {
             email: user?.email ?? '',
             contact: user?.phone ?? '',
           },
-          theme: { color: '#E84672' },
+          theme: { color: '#E8567F' },
         };
 
         const paymentResponse: RazorpaySuccessResponse =

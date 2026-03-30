@@ -31,7 +31,7 @@ interface MenuItem {
 }
 
 export default function ProfileScreen() {
-  const { theme, mode, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const navigation = useNavigation<ProfileNavProp>();
   const { user } = useAuthStore();
   const logoutMutation = useLogout();
@@ -107,28 +107,13 @@ export default function ProfileScreen() {
           onPress: handleNavigateChangePassword,
         },
         {
-          icon: 'moon-outline',
-          label: 'Dark Mode',
-          isToggle: true,
-          toggleValue: mode === 'dark',
-          onToggle: () => toggleTheme(),
-        },
-        {
           icon: 'log-out-outline',
           label: 'Logout',
           onPress: handleLogout,
           color: theme.colors.error,
         },
       ]
-    : [
-        {
-          icon: 'moon-outline',
-          label: 'Dark Mode',
-          isToggle: true,
-          toggleValue: mode === 'dark',
-          onToggle: () => toggleTheme(),
-        },
-      ];
+    : [];
 
   const renderMenuItem = (item: MenuItem, index: number) => {
     const isLast = index === menuItems.length - 1;

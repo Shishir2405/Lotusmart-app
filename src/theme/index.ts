@@ -1,9 +1,7 @@
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../config/constants';
-
-export type ThemeMode = 'light' | 'dark';
+import { FONTS } from '../config/fonts';
 
 export interface Theme {
-  mode: ThemeMode;
   colors: {
     primary: string;
     primaryDark: string;
@@ -14,6 +12,8 @@ export interface Theme {
     accent: string;
     accentDark: string;
     accentLight: string;
+    brown: string;
+    brownLight: string;
     background: string;
     surface: string;
     text: string;
@@ -24,13 +24,13 @@ export interface Theme {
     warning: string;
     info: string;
   };
+  fonts: typeof FONTS;
   spacing: typeof SPACING;
   fontSizes: typeof FONT_SIZES;
   borderRadius: typeof BORDER_RADIUS;
 }
 
-export const lightTheme: Theme = {
-  mode: 'light',
+export const theme: Theme = {
   colors: {
     primary: COLORS.rose,
     primaryDark: COLORS.roseDark,
@@ -41,6 +41,8 @@ export const lightTheme: Theme = {
     accent: COLORS.gold,
     accentDark: COLORS.goldDark,
     accentLight: COLORS.goldLight,
+    brown: COLORS.brown,
+    brownLight: COLORS.brownLight,
     background: COLORS.background,
     surface: COLORS.surface,
     text: COLORS.textPrimary,
@@ -51,33 +53,7 @@ export const lightTheme: Theme = {
     warning: COLORS.warning,
     info: COLORS.info,
   },
-  spacing: SPACING,
-  fontSizes: FONT_SIZES,
-  borderRadius: BORDER_RADIUS,
-};
-
-export const darkTheme: Theme = {
-  mode: 'dark',
-  colors: {
-    primary: COLORS.rose,
-    primaryDark: COLORS.roseDark,
-    primaryLight: '#3D1525',
-    secondary: COLORS.olive,
-    secondaryDark: COLORS.oliveDark,
-    secondaryLight: '#1E2A14',
-    accent: COLORS.gold,
-    accentDark: COLORS.goldDark,
-    accentLight: '#2A2518',
-    background: COLORS.backgroundDark,
-    surface: COLORS.surfaceDark,
-    text: COLORS.textPrimaryDark,
-    textSecondary: COLORS.textSecondaryDark,
-    border: COLORS.borderDark,
-    error: COLORS.error,
-    success: COLORS.success,
-    warning: COLORS.warning,
-    info: COLORS.info,
-  },
+  fonts: FONTS,
   spacing: SPACING,
   fontSizes: FONT_SIZES,
   borderRadius: BORDER_RADIUS,

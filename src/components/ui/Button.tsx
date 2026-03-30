@@ -42,7 +42,7 @@ function getVariantStyles(
   switch (variant) {
     case 'primary':
       return {
-        container: { backgroundColor: '#E84672' },
+        container: { backgroundColor: '#E8567F' },
         text: { color: '#FFFFFF' },
         loaderColor: '#FFFFFF',
       };

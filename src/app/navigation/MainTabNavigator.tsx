@@ -8,13 +8,16 @@ import CartScreen from '../../modules/cart/screens/CartScreen';
 import OrdersScreen from '../../modules/orders/screens/OrdersScreen';
 import ProfileScreen from '../../modules/users/screens/ProfileScreen';
 import { useCartStore } from '../../store/cart.store';
+import { useAuthStore } from '../../store/auth.store';
 import { useTheme } from '../../theme/ThemeContext';
 import { MainTabParamList } from './types';
+import { FONTS } from '../../config/fonts';
+import { COLORS } from '../../config/constants';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const ACTIVE_COLOR = '#E84672';
-const INACTIVE_COLOR = '#6B7280';
+const ACTIVE_COLOR = COLORS.rose;
+const INACTIVE_COLOR = '#a8a29e';
 
 function CartIconWithBadge({
   color,
@@ -39,8 +42,44 @@ function CartIconWithBadge({
   );
 }
 
+// Placeholder screen for unauthenticated users trying to access orders/profile
+function LoginPromptScreen() {
+  const { theme } = useTheme();
+  const navigation = require('@react-navigation/native').useNavigation();
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background, padding: 24 }}>
+      <Ionicons name="lock-closed-outline" size={64} color={theme.colors.primary} />
+      <Text style={{ fontFamily: FONTS.heading.bold, fontSize: 22, color: theme.colors.text, marginTop: 16, textAlign: 'center' }}>
+        Sign in to continue
+      </Text>
+      <Text style={{ fontFamily: FONTS.body.regular, fontSize: 15, color: theme.colors.textSecondary, marginTop: 8, textAlign: 'center', lineHeight: 22 }}>
+        Please login to view your orders and manage your account.
+      </Text>
+      <View style={{ marginTop: 24, width: '100%', alignItems: 'center' }}>
+        <Text
+          style={{
+            fontFamily: FONTS.body.semiBold,
+            fontSize: 16,
+            color: '#FFFFFF',
+            backgroundColor: theme.colors.primary,
+            paddingHorizontal: 32,
+            paddingVertical: 14,
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}
+          onPress={() => navigation.navigate('Auth', { screen: 'Login' })}
+        >
+          Sign In
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export function MainTabNavigator() {
   const { theme } = useTheme();
+  const user = useAuthStore((state) => state.user);
 
   return (
     <Tab.Navigator
@@ -50,19 +89,20 @@ export function MainTabNavigator() {
         tabBarInactiveTintColor: INACTIVE_COLOR,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.border,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08,
+          shadowOpacity: 0.06,
           shadowRadius: 8,
           height: Platform.OS === 'ios' ? 88 : 64,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
+          fontFamily: FONTS.body.semiBold,
           fontSize: 11,
-          fontWeight: '600',
         },
       }}
     >
@@ -98,7 +138,7 @@ export function MainTabNavigator() {
       />
       <Tab.Screen
         name="OrdersTab"
-        component={OrdersScreen}
+        component={user ? OrdersScreen : LoginPromptScreen}
         options={{
           tabBarLabel: 'Orders',
           tabBarIcon: ({ color, size, focused }) => (
@@ -108,7 +148,7 @@ export function MainTabNavigator() {
       />
       <Tab.Screen
         name="ProfileTab"
-        component={ProfileScreen}
+        component={user ? ProfileScreen : LoginPromptScreen}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size, focused }) => (

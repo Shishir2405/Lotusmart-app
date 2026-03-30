@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   discountBadge: {
-    backgroundColor: '#E84672',
+    backgroundColor: '#E8567F',
     paddingHorizontal: 8,
     paddingVertical: 3,
   },

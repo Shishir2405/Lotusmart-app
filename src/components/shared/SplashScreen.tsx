@@ -148,6 +148,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     letterSpacing: 1,
     marginBottom: 8,
+    // Font will be applied after fonts are loaded
   },
   tagline: {
     fontSize: 16,

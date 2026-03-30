@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,78 +6,752 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  TextInput,
   StyleSheet,
   RefreshControl,
   Dimensions,
+  TextInput,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Skeleton } from '../../../components/ui';
 import { useCategories, useFeaturedProducts, useProducts } from '../hooks';
 import { ProductCard } from '../components/ProductCard';
 import { ProductListSkeleton } from '../components/ProductListSkeleton';
+import { HomeHeader } from '../../../components/shared/HomeHeader';
 import { IProduct, ICategory } from '../../../types';
-import { ProductStackParamList } from '../types';
+import { RootStackParamList } from '../../../app/navigation/types';
+import { FONTS } from '../../../config/fonts';
+import { COLORS } from '../../../config/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 
-type NavProp = NativeStackNavigationProp<ProductStackParamList>;
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
+
+// ====== HERO BANNER CAROUSEL ======
+
+const HERO_SLIDES = [
+  {
+    tag: 'Premium Collection',
+    title: 'Pure & Natural',
+    titleHighlight: 'Spices',
+    subtitle: 'Farm-fresh whole & ground spices sourced directly from Indian farms.',
+    bgColor: ['#5C6B3C', '#3E4A28'] as [string, string],
+    accentColor: '#B59F6B',
+    ctaText: 'Shop Spices',
+  },
+  {
+    tag: 'Handpicked Quality',
+    title: 'Premium',
+    titleHighlight: 'Dry Fruits',
+    subtitle: 'Finest quality almonds, cashews, pistachios & more at best prices.',
+    bgColor: ['#7A6E42', '#5C5230'] as [string, string],
+    accentColor: '#E8567F',
+    ctaText: 'Shop Dry Fruits',
+  },
+  {
+    tag: 'Gift Something Special',
+    title: 'Curated',
+    titleHighlight: 'Gift Boxes',
+    subtitle: 'Beautiful gift hampers for every occasion. Perfect for festivals & celebrations.',
+    bgColor: ['#8B4B6B', '#6B3550'] as [string, string],
+    accentColor: '#B59F6B',
+    ctaText: 'View Collection',
+  },
+];
+
+function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => {
+        const next = (prev + 1) % HERO_SLIDES.length;
+        scrollRef.current?.scrollToOffset({ offset: next * SCREEN_WIDTH, animated: true });
+        return next;
+      });
+    }, 5500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    setActiveSlide(index);
+  };
+
+  return (
+    <View>
+      <FlatList
+        ref={scrollRef}
+        data={HERO_SLIDES}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onScrollEnd}
+        keyExtractor={(_, i) => `hero-${i}`}
+        renderItem={({ item }) => (
+          <LinearGradient
+            colors={item.bgColor}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[heroStyles.slide, { width: SCREEN_WIDTH }]}
+          >
+            <View style={heroStyles.content}>
+              <Text style={[heroStyles.tag, { color: item.accentColor }]}>{item.tag}</Text>
+              <Text style={heroStyles.title}>
+                {item.title}{'\n'}
+                <Text style={[heroStyles.titleHighlight, { color: item.accentColor }]}>
+                  {item.titleHighlight}
+                </Text>
+              </Text>
+              <Text style={heroStyles.subtitle}>{item.subtitle}</Text>
+              <TouchableOpacity
+                style={[heroStyles.cta, { backgroundColor: item.accentColor }]}
+                onPress={onShopPress}
+                activeOpacity={0.8}
+              >
+                <Text style={heroStyles.ctaText}>{item.ctaText}</Text>
+                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              {/* Trust badges */}
+              <View style={heroStyles.trustRow}>
+                <View style={heroStyles.trustBadge}>
+                  <Ionicons name="leaf-outline" size={12} color="rgba(255,255,255,0.7)" />
+                  <Text style={heroStyles.trustText}>100% Natural</Text>
+                </View>
+                <View style={heroStyles.trustBadge}>
+                  <Ionicons name="shield-checkmark-outline" size={12} color="rgba(255,255,255,0.7)" />
+                  <Text style={heroStyles.trustText}>FSSAI Certified</Text>
+                </View>
+                <View style={heroStyles.trustBadge}>
+                  <Ionicons name="car-outline" size={12} color="rgba(255,255,255,0.7)" />
+                  <Text style={heroStyles.trustText}>Free Shipping</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+        )}
+      />
+
+      {/* Progress indicators */}
+      <View style={heroStyles.indicatorRow}>
+        {HERO_SLIDES.map((_, i) => (
+          <View
+            key={i}
+            style={[
+              heroStyles.indicator,
+              {
+                backgroundColor: i === activeSlide ? COLORS.rose : '#D6D3D1',
+                width: i === activeSlide ? 24 : 8,
+              },
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const heroStyles = StyleSheet.create({
+  slide: {
+    height: 260,
+    justifyContent: 'center',
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  tag: {
+    fontFamily: FONTS.body.bold,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  title: {
+    fontFamily: FONTS.heading.bold,
+    fontSize: 28,
+    color: '#FFFFFF',
+    lineHeight: 34,
+    marginBottom: 8,
+  },
+  titleHighlight: {
+    fontFamily: FONTS.heading.extraBold,
+  },
+  subtitle: {
+    fontFamily: FONTS.body.regular,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  ctaText: {
+    fontFamily: FONTS.body.bold,
+    color: '#FFFFFF',
+    fontSize: 13,
+    letterSpacing: 0.3,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trustText: {
+    fontFamily: FONTS.body.medium,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+  },
+  indicatorRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+  indicator: {
+    height: 4,
+    borderRadius: 2,
+  },
+});
+
+// ====== SECTION HEADER ======
 
 function SectionHeader({
   title,
+  subtitle,
   onViewAll,
 }: {
   title: string;
+  subtitle?: string;
   onViewAll?: () => void;
 }) {
   const { theme } = useTheme();
   return (
-    <View style={[styles.sectionHeader, { paddingHorizontal: theme.spacing.lg }]}>
-      <Text style={[styles.sectionTitle, { color: theme.colors.text, fontSize: theme.fontSizes.xl }]}>
-        {title}
-      </Text>
-      {onViewAll && (
-        <TouchableOpacity onPress={onViewAll}>
-          <Text style={[styles.viewAll, { color: theme.colors.primary, fontSize: theme.fontSizes.sm }]}>
-            View All
+    <View style={[sectionStyles.header, { paddingHorizontal: 16 }]}>
+      <View style={{ flex: 1 }}>
+        <Text style={[sectionStyles.title, { color: theme.colors.text }]}>{title}</Text>
+        {subtitle && (
+          <Text style={[sectionStyles.subtitle, { color: theme.colors.textSecondary }]}>
+            {subtitle}
           </Text>
+        )}
+      </View>
+      {onViewAll && (
+        <TouchableOpacity onPress={onViewAll} style={sectionStyles.viewAllBtn}>
+          <Text style={[sectionStyles.viewAll, { color: theme.colors.primary }]}>View All</Text>
+          <Ionicons name="arrow-forward" size={14} color={theme.colors.primary} />
         </TouchableOpacity>
       )}
     </View>
   );
 }
 
+const sectionStyles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  title: {
+    fontFamily: FONTS.heading.bold,
+    fontSize: 22,
+  },
+  subtitle: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAll: {
+    fontFamily: FONTS.body.semiBold,
+    fontSize: 13,
+  },
+});
+
+// ====== CATEGORY ITEM ======
+
 function CategoryItem({ category, onPress }: { category: ICategory; onPress: () => void }) {
   const { theme } = useTheme();
   return (
-    <TouchableOpacity style={styles.categoryItem} onPress={onPress} activeOpacity={0.7}>
-      <View
-        style={[
-          styles.categoryImageContainer,
-          {
-            backgroundColor: theme.colors.primaryLight + '30',
-            borderColor: theme.colors.border,
-          },
-        ]}
-      >
+    <TouchableOpacity style={catStyles.item} onPress={onPress} activeOpacity={0.7}>
+      <View style={[catStyles.imageContainer, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
         {category.image ? (
-          <Image source={{ uri: category.image }} style={styles.categoryImage} resizeMode="cover" />
+          <Image source={{ uri: category.image }} style={catStyles.image} resizeMode="cover" />
         ) : (
-          <Text style={{ fontSize: 28 }}>{'\uD83C\uDF3F'}</Text>
+          <Ionicons name="leaf" size={26} color={theme.colors.secondary} />
         )}
       </View>
-      <Text
-        style={[styles.categoryName, { color: theme.colors.text, fontSize: theme.fontSizes.xs }]}
-        numberOfLines={2}
-      >
+      <Text style={[catStyles.name, { color: theme.colors.text }]} numberOfLines={2}>
         {category.name}
       </Text>
     </TouchableOpacity>
   );
 }
+
+const catStyles = StyleSheet.create({
+  item: {
+    alignItems: 'center',
+    width: 80,
+  },
+  imageContainer: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  name: {
+    fontFamily: FONTS.body.medium,
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+});
+
+// ====== BANNER STRIP ======
+
+function BannerStrip() {
+  const { theme } = useTheme();
+
+  const items = [
+    { icon: 'car-outline' as const, label: 'Free Shipping', sub: 'Orders above \u20B9499' },
+    { icon: 'shield-checkmark-outline' as const, label: '100% Authentic', sub: 'Genuine products' },
+    { icon: 'cube-outline' as const, label: 'Pan-India', sub: 'Fast delivery' },
+    { icon: 'time-outline' as const, label: 'Same Day', sub: 'Quick dispatch' },
+  ];
+
+  return (
+    <View style={[bannerStyles.container, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      {items.map((item, i) => (
+        <View key={i} style={bannerStyles.item}>
+          <View style={[bannerStyles.iconCircle, { backgroundColor: theme.colors.primaryLight }]}>
+            <Ionicons name={item.icon} size={18} color={theme.colors.primary} />
+          </View>
+          <Text style={[bannerStyles.label, { color: theme.colors.text }]}>{item.label}</Text>
+          <Text style={[bannerStyles.sub, { color: theme.colors.textSecondary }]}>{item.sub}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const bannerStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  item: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  label: {
+    fontFamily: FONTS.body.semiBold,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  sub: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 9,
+    textAlign: 'center',
+    marginTop: 1,
+  },
+});
+
+// ====== WHY CHOOSE US ======
+
+function WhyChooseUsSection() {
+  const { theme } = useTheme();
+
+  const features = [
+    { icon: 'leaf' as const, title: 'Farm Fresh', desc: 'Sourced directly from organic farms', color: '#16A34A' },
+    { icon: 'shield-checkmark' as const, title: 'FSSAI Licensed', desc: 'Certified safe & hygienic', color: '#E8567F' },
+    { icon: 'star' as const, title: '4.9\u2605 Rated', desc: '50K+ happy customers', color: '#D97706' },
+    { icon: 'cube' as const, title: 'Premium Packaging', desc: 'Freshness sealed guaranteed', color: '#7C3AED' },
+    { icon: 'refresh' as const, title: 'Easy Returns', desc: 'Hassle-free return policy', color: '#0891B2' },
+    { icon: 'flash' as const, title: 'Fast Delivery', desc: 'Pan-India express shipping', color: '#B59F6B' },
+  ];
+
+  return (
+    <View style={whyStyles.container}>
+      <Text style={[whyStyles.heading, { color: theme.colors.text }]}>Why Choose LotusMart</Text>
+      <Text style={[whyStyles.subheading, { color: theme.colors.textSecondary }]}>
+        Our promise of quality & trust
+      </Text>
+
+      {/* Stats strip */}
+      <View style={[whyStyles.statsRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        {[
+          { value: '50K+', label: 'Orders' },
+          { value: '4.9\u2605', label: 'Rating' },
+          { value: '200+', label: 'Products' },
+          { value: '7yr', label: 'In Business' },
+        ].map((stat, i) => (
+          <View key={i} style={whyStyles.statItem}>
+            <Text style={[whyStyles.statValue, { color: theme.colors.primary }]}>{stat.value}</Text>
+            <Text style={[whyStyles.statLabel, { color: theme.colors.textSecondary }]}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Feature grid */}
+      <View style={whyStyles.featureGrid}>
+        {features.map((f, i) => (
+          <View key={i} style={[whyStyles.featureItem, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={[whyStyles.featureIcon, { backgroundColor: f.color + '15' }]}>
+              <Ionicons name={f.icon} size={20} color={f.color} />
+            </View>
+            <Text style={[whyStyles.featureTitle, { color: theme.colors.text }]}>{f.title}</Text>
+            <Text style={[whyStyles.featureDesc, { color: theme.colors.textSecondary }]}>{f.desc}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const whyStyles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+  },
+  heading: {
+    fontFamily: FONTS.heading.bold,
+    fontSize: 22,
+    textAlign: 'center',
+  },
+  subheading: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontFamily: FONTS.heading.bold,
+    fontSize: 18,
+  },
+  statLabel: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  featureGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  featureItem: {
+    width: (SCREEN_WIDTH - 42) / 2,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  featureIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  featureTitle: {
+    fontFamily: FONTS.body.semiBold,
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  featureDesc: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+});
+
+// ====== FAQ SECTION ======
+
+const FAQ_DATA = [
+  {
+    q: 'Are your products 100% natural and chemical-free?',
+    a: 'Yes! All our spices and dry fruits are sourced directly from farms and are 100% natural, without any artificial colours, flavours, or preservatives.',
+  },
+  {
+    q: 'Do you offer free shipping?',
+    a: 'Yes, we offer free shipping on all orders above \u20B9499. For orders below \u20B9499, a nominal shipping fee of \u20B949-60 applies.',
+  },
+  {
+    q: 'What is your return policy?',
+    a: 'We offer hassle-free returns within 7 days of delivery. If you receive damaged or wrong products, we will arrange a full refund or replacement.',
+  },
+  {
+    q: 'How are the products packaged?',
+    a: 'All products are packed in premium food-grade, airtight packaging to ensure maximum freshness and shelf life.',
+  },
+  {
+    q: 'Do you deliver across India?',
+    a: 'Yes, we deliver pan-India. Most orders are delivered within 3-7 business days depending on your location.',
+  },
+];
+
+function FAQSection() {
+  const { theme } = useTheme();
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  return (
+    <View style={faqStyles.container}>
+      <Text style={[faqStyles.heading, { color: theme.colors.text }]}>
+        Frequently Asked Questions
+      </Text>
+      <Text style={[faqStyles.subheading, { color: theme.colors.textSecondary }]}>
+        Got questions? We've got answers
+      </Text>
+
+      {FAQ_DATA.map((faq, i) => (
+        <TouchableOpacity
+          key={i}
+          style={[faqStyles.item, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+          onPress={() => setExpanded(expanded === i ? null : i)}
+          activeOpacity={0.7}
+        >
+          <View style={faqStyles.questionRow}>
+            <Text style={[faqStyles.question, { color: theme.colors.text }]}>{faq.q}</Text>
+            <Ionicons
+              name={expanded === i ? 'remove-circle-outline' : 'add-circle-outline'}
+              size={22}
+              color={theme.colors.primary}
+            />
+          </View>
+          {expanded === i && (
+            <View style={[faqStyles.answerContainer, { borderTopColor: theme.colors.border }]}>
+              <Text style={[faqStyles.answer, { color: theme.colors.textSecondary }]}>{faq.a}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+const faqStyles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+  },
+  heading: {
+    fontFamily: FONTS.heading.bold,
+    fontSize: 22,
+    textAlign: 'center',
+  },
+  subheading: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  item: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 10,
+  },
+  questionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  question: {
+    fontFamily: FONTS.body.semiBold,
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 20,
+  },
+  answerContainer: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+  },
+  answer: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+});
+
+// ====== NEWSLETTER SECTION ======
+
+function NewsletterSection() {
+  const { theme } = useTheme();
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = () => {
+    if (email.includes('@')) {
+      setSubscribed(true);
+      setEmail('');
+    }
+  };
+
+  return (
+    <LinearGradient
+      colors={['#5C6B3C', '#3E4A28']}
+      style={nlStyles.container}
+    >
+      <Text style={nlStyles.heading}>Stay Updated</Text>
+      <Text style={nlStyles.subtext}>
+        Subscribe to get exclusive offers, new product launches & seasonal deals.
+      </Text>
+
+      {subscribed ? (
+        <View style={nlStyles.successRow}>
+          <Ionicons name="checkmark-circle" size={24} color="#B59F6B" />
+          <Text style={nlStyles.successText}>Thank you for subscribing!</Text>
+        </View>
+      ) : (
+        <View style={nlStyles.inputRow}>
+          <TextInput
+            style={nlStyles.input}
+            placeholder="Enter your email"
+            placeholderTextColor="rgba(255,255,255,0.5)"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TouchableOpacity style={nlStyles.button} onPress={handleSubscribe} activeOpacity={0.8}>
+            <Text style={nlStyles.buttonText}>Subscribe</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Text style={nlStyles.privacy}>No spam, unsubscribe anytime.</Text>
+    </LinearGradient>
+  );
+}
+
+const nlStyles = StyleSheet.create({
+  container: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  heading: {
+    fontFamily: FONTS.heading.bold,
+    fontSize: 22,
+    color: '#FFFFFF',
+    marginBottom: 6,
+  },
+  subtext: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 8,
+  },
+  input: {
+    flex: 1,
+    fontFamily: FONTS.body.regular,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: '#FFFFFF',
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  button: {
+    backgroundColor: '#B59F6B',
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+  },
+  buttonText: {
+    fontFamily: FONTS.body.bold,
+    color: '#FFFFFF',
+    fontSize: 13,
+  },
+  successRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  successText: {
+    fontFamily: FONTS.body.semiBold,
+    color: '#B59F6B',
+    fontSize: 15,
+  },
+  privacy: {
+    fontFamily: FONTS.body.regular,
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    marginTop: 10,
+  },
+});
+
+// ====== MAIN HOME SCREEN ======
 
 export function HomeScreen() {
   const { theme } = useTheme();
@@ -112,249 +786,138 @@ export function HomeScreen() {
     ({ item }: { item: ICategory }) => (
       <CategoryItem
         category={item}
-        onPress={() =>
-          navigation.navigate('ProductList', { category: item._id, title: item.name })
-        }
+        onPress={() => navigation.navigate('ProductList', { category: item._id, title: item.name })}
       />
     ),
     [navigation],
   );
 
-  const renderAllProduct = useCallback(
-    ({ item }: { item: IProduct }) => (
-      <View style={{ width: CARD_WIDTH }}>
-        <ProductCard product={item} />
-      </View>
-    ),
-    [],
-  );
-
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={theme.colors.primary}
-          colors={[theme.colors.primary]}
-        />
-      }
-    >
-      {/* Search Bar */}
-      <TouchableOpacity
-        style={[
-          styles.searchBar,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-            borderRadius: theme.borderRadius.md,
-            marginHorizontal: theme.spacing.lg,
-            marginTop: theme.spacing.lg,
-          },
-        ]}
-        activeOpacity={0.7}
-        onPress={() => navigation.navigate('Search')}
-      >
-        <Text style={{ fontSize: 18, marginRight: 8, color: theme.colors.textSecondary }}>
-          {'\uD83D\uDD0D'}
-        </Text>
-        <Text style={[styles.searchPlaceholder, { color: theme.colors.textSecondary, fontSize: theme.fontSizes.base }]}>
-          Search products...
-        </Text>
-      </TouchableOpacity>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Top Header Bar */}
+      <HomeHeader />
 
-      {/* Hero Banner */}
-      <View
-        style={[
-          styles.heroBanner,
-          {
-            backgroundColor: '#5C6B3C',
-            marginHorizontal: theme.spacing.lg,
-            marginTop: theme.spacing.lg,
-            borderRadius: theme.borderRadius.lg,
-          },
-        ]}
-      >
-        <Text style={styles.heroSubtitle}>Premium Quality</Text>
-        <Text style={styles.heroTitle}>Natural & Organic{'\n'}Products</Text>
-        <Text style={styles.heroTagline}>
-          Farm-fresh spices, dry fruits & superfoods delivered to your door
-        </Text>
-        <TouchableOpacity
-          style={[styles.heroButton, { borderRadius: theme.borderRadius.sm }]}
-          onPress={() => navigation.navigate('ProductList', { title: 'All Products' })}
-        >
-          <Text style={styles.heroButtonText}>Shop Now</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Shop by Category */}
-      <View style={{ marginTop: theme.spacing['2xl'] }}>
-        <SectionHeader title="Shop by Category" />
-        {loadingCategories ? (
-          <View style={[styles.categorySkeleton, { paddingHorizontal: theme.spacing.lg }]}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} style={styles.categoryItem}>
-                <Skeleton width={64} height={64} borderRadius={32} />
-                <Skeleton width={50} height={10} borderRadius={4} style={{ marginTop: 6 }} />
-              </View>
-            ))}
-          </View>
-        ) : (
-          <FlatList
-            data={categories}
-            renderItem={renderCategory}
-            keyExtractor={(item) => item._id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: theme.spacing.lg }}
-            ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
           />
-        )}
-      </View>
+        }
+      >
+        {/* Hero Banner Carousel */}
+        <HeroBanner onShopPress={() => navigation.navigate('ProductList', { title: 'All Products' })} />
 
-      {/* Featured Products */}
-      <View style={{ marginTop: theme.spacing['2xl'] }}>
-        <SectionHeader
-          title="Featured Products"
-          onViewAll={() => navigation.navigate('ProductList', { title: 'Featured Products' })}
-        />
-        {loadingFeatured ? (
-          <View style={{ paddingHorizontal: theme.spacing.lg }}>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              {Array.from({ length: 3 }).map((_, i) => (
-                <View key={i} style={{ width: 170 }}>
-                  <Skeleton width={170} height={180} borderRadius={theme.borderRadius.md} />
-                  <Skeleton width={120} height={14} borderRadius={4} style={{ marginTop: 8 }} />
-                  <Skeleton width={80} height={16} borderRadius={4} style={{ marginTop: 4 }} />
+        {/* Banner Strip - Shipping, Authentic, etc */}
+        <View style={{ marginTop: 20 }}>
+          <BannerStrip />
+        </View>
+
+        {/* Shop by Category */}
+        <View style={{ marginTop: 28 }}>
+          <SectionHeader
+            title="Shop by Category"
+            subtitle="Browse our premium collections"
+            onViewAll={() => navigation.navigate('ProductList', { title: 'All Categories' })}
+          />
+          {loadingCategories ? (
+            <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 12 }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <View key={i} style={{ alignItems: 'center', width: 80 }}>
+                  <Skeleton width={68} height={68} borderRadius={34} />
+                  <Skeleton width={50} height={10} borderRadius={4} style={{ marginTop: 8 }} />
                 </View>
               ))}
             </View>
-          </View>
-        ) : (
-          <FlatList
-            data={featuredProducts}
-            renderItem={renderFeaturedProduct}
-            keyExtractor={(item) => item._id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: theme.spacing.lg }}
-          />
-        )}
-      </View>
+          ) : (
+            <FlatList
+              data={categories}
+              renderItem={renderCategory}
+              keyExtractor={(item) => item._id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+              ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
+            />
+          )}
+        </View>
 
-      {/* All Products Grid */}
-      <View style={{ marginTop: theme.spacing['2xl'], marginBottom: theme.spacing['3xl'] }}>
-        <SectionHeader
-          title="All Products"
-          onViewAll={() => navigation.navigate('ProductList', { title: 'All Products' })}
-        />
-        {loadingAll ? (
-          <ProductListSkeleton count={4} />
-        ) : (
-          <View style={styles.productGrid}>
-            {allProducts.slice(0, 6).map((product: IProduct) => (
-              <View key={product._id} style={{ width: CARD_WIDTH }}>
-                <ProductCard product={product} />
+        {/* Featured Products */}
+        <View style={{ marginTop: 28 }}>
+          <SectionHeader
+            title="Featured Products"
+            subtitle="Handpicked for you"
+            onViewAll={() => navigation.navigate('ProductList', { title: 'Featured Products' })}
+          />
+          {loadingFeatured ? (
+            <View style={{ paddingHorizontal: 16 }}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <View key={i} style={{ width: 170 }}>
+                    <Skeleton width={170} height={180} borderRadius={12} />
+                    <Skeleton width={120} height={14} borderRadius={4} style={{ marginTop: 8 }} />
+                    <Skeleton width={80} height={16} borderRadius={4} style={{ marginTop: 4 }} />
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        )}
-      </View>
-    </ScrollView>
+            </View>
+          ) : (
+            <FlatList
+              data={featuredProducts}
+              renderItem={renderFeaturedProduct}
+              keyExtractor={(item) => item._id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+            />
+          )}
+        </View>
+
+        {/* All Products Grid */}
+        <View style={{ marginTop: 28 }}>
+          <SectionHeader
+            title="All Products"
+            subtitle="Explore our complete range"
+            onViewAll={() => navigation.navigate('ProductList', { title: 'All Products' })}
+          />
+          {loadingAll ? (
+            <ProductListSkeleton count={4} />
+          ) : (
+            <View style={styles.productGrid}>
+              {allProducts.slice(0, 6).map((product: IProduct) => (
+                <View key={product._id} style={{ width: CARD_WIDTH }}>
+                  <ProductCard product={product} />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Why Choose Us */}
+        <View style={{ marginTop: 32 }}>
+          <WhyChooseUsSection />
+        </View>
+
+        {/* FAQ Section */}
+        <View style={{ marginTop: 32 }}>
+          <FAQSection />
+        </View>
+
+        {/* Newsletter */}
+        <View style={{ marginTop: 32, marginBottom: 40 }}>
+          <NewsletterSection />
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-  },
-  searchPlaceholder: {
-    flex: 1,
-  },
-  heroBanner: {
-    padding: 24,
-    overflow: 'hidden',
-  },
-  heroSubtitle: {
-    color: '#B59F6B',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '800',
-    lineHeight: 32,
-    marginBottom: 8,
-  },
-  heroTagline: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  heroButton: {
-    backgroundColor: '#E84672',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-  },
-  heroButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontWeight: '700',
-  },
-  viewAll: {
-    fontWeight: '600',
-  },
-  categorySkeleton: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  categoryItem: {
-    alignItems: 'center',
-    width: 76,
-  },
-  categoryImageContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  categoryImage: {
-    width: '100%',
-    height: '100%',
-  },
-  categoryName: {
-    marginTop: 6,
-    textAlign: 'center',
-    fontWeight: '500',
   },
   productGrid: {
     flexDirection: 'row',

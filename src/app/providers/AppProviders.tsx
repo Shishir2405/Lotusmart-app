@@ -3,11 +3,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   NavigationContainer,
   DefaultTheme,
-  DarkTheme,
   Theme as NavTheme,
 } from '@react-navigation/native';
-import { ThemeProvider, useTheme } from '../../theme/ThemeContext';
+import { ThemeProvider } from '../../theme/ThemeContext';
 import { ToastProvider } from '../../components/ui/Toast';
+import { useFonts, fontMap } from '../../config/fonts';
+import { SplashScreen } from '../../components/shared/SplashScreen';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,25 +23,12 @@ const LightNavigationTheme: NavTheme = {
   ...DefaultTheme,
   dark: false,
   colors: {
-    primary: '#E84672',
+    primary: '#E8567F',
     background: '#FFFDF7',
     card: '#FFFFFF',
-    text: '#1F2937',
-    border: '#E5E7EB',
-    notification: '#E84672',
-  },
-};
-
-const DarkNavigationTheme: NavTheme = {
-  ...DarkTheme,
-  dark: true,
-  colors: {
-    primary: '#E84672',
-    background: '#111111',
-    card: '#1E1E1E',
-    text: '#F9FAFB',
-    border: '#374151',
-    notification: '#E84672',
+    text: '#1C1917',
+    border: '#EBE8D8',
+    notification: '#E8567F',
   },
 };
 
@@ -49,24 +37,19 @@ interface AppProvidersProps {
   onReady?: () => void;
 }
 
-function NavigationWrapper({ children, onReady }: AppProvidersProps) {
-  const { mode } = useTheme();
-  const navigationTheme = mode === 'dark' ? DarkNavigationTheme : LightNavigationTheme;
-
-  return (
-    <NavigationContainer theme={navigationTheme} onReady={onReady}>
-      {children}
-    </NavigationContainer>
-  );
-}
-
 export function AppProviders({ children, onReady }: AppProvidersProps) {
+  const [fontsLoaded] = useFonts(fontMap);
+
+  if (!fontsLoaded) {
+    return <SplashScreen />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <NavigationWrapper onReady={onReady}>
+        <NavigationContainer theme={LightNavigationTheme} onReady={onReady}>
           <ToastProvider>{children}</ToastProvider>
-        </NavigationWrapper>
+        </NavigationContainer>
       </ThemeProvider>
     </QueryClientProvider>
   );

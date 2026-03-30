@@ -117,7 +117,7 @@ function ProductCardInner({ product, horizontal = false }: ProductCardProps) {
 
         {/* Discount Badge */}
         {discount > 0 && (
-          <View style={[styles.discountBadge, { backgroundColor: '#E84672' }]}>
+          <View style={[styles.discountBadge, { backgroundColor: '#E8567F' }]}>
             <Text style={styles.discountText}>{discount}% OFF</Text>
           </View>
         )}
@@ -134,7 +134,7 @@ function ProductCardInner({ product, horizontal = false }: ProductCardProps) {
           onPress={handleToggleWishlist}
           hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
         >
-          <Text style={{ fontSize: 16, color: isInWishlist ? '#E84672' : theme.colors.textSecondary }}>
+          <Text style={{ fontSize: 16, color: isInWishlist ? '#E8567F' : theme.colors.textSecondary }}>
             {isInWishlist ? '\u2665' : '\u2661'}
           </Text>
         </TouchableOpacity>

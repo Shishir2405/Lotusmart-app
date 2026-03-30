@@ -32,7 +32,7 @@ export async function openRazorpayCheckout(
     description: options.description || 'Order Payment',
     order_id: options.orderId,
     prefill: options.prefill || {},
-    theme: { color: '#E84672' },
+    theme: { color: '#E8567F' },
   };
 
   const data = await RazorpayCheckout.open(rzpOptions);

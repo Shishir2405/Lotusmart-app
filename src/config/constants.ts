@@ -3,9 +3,9 @@ export const API_BASE_URL = __DEV__
   : 'https://lotusmart-gamma.vercel.app/api';
 
 export const COLORS = {
+  // Exact website colors
   cream: '#FFF8F0',
-  creamDark: '#1A1A1A',
-  rose: '#E84672',
+  rose: '#E8567F',
   roseDark: '#C93D63',
   roseLight: '#FDEEF2',
   olive: '#5C6B3C',
@@ -14,16 +14,13 @@ export const COLORS = {
   gold: '#B59F6B',
   goldDark: '#8C7A4F',
   goldLight: '#F5F0E1',
-  textPrimary: '#1F2937',
+  brown: '#7A6E42',
+  brownLight: '#EBE8D8',
+  textPrimary: '#1C1917',
   textSecondary: '#6B7280',
-  textPrimaryDark: '#F9FAFB',
-  textSecondaryDark: '#9CA3AF',
   background: '#FFFDF7',
-  backgroundDark: '#111111',
   surface: '#FFFFFF',
-  surfaceDark: '#1E1E1E',
-  border: '#E5E7EB',
-  borderDark: '#374151',
+  border: '#EBE8D8',
   error: '#EF4444',
   success: '#10B981',
   warning: '#F59E0B',
