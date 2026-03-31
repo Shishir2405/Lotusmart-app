@@ -11,8 +11,10 @@ import {
   NativeScrollEvent,
   ActivityIndicator,
 } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../../theme/ThemeContext';
+import { useAuthStore } from '../../../store/auth.store';
 import { Button, Badge } from '../../../components/ui';
 import { Skeleton } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
@@ -73,8 +75,10 @@ function CollapsibleSection({
 export function ProductDetailScreen() {
   const { theme } = useTheme();
   const route = useRoute<RouteProps>();
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const { productId } = route.params;
   const { showToast } = useToast();
+  const user = useAuthStore((s) => s.user);
 
   const { data: productRes, isLoading } = useProduct(productId);
   const product = productRes?.data;
@@ -124,6 +128,40 @@ export function ProductDetailScreen() {
     });
     showToast('success', 'Added to cart');
   }, [product, quantity, selectedVariants, addCartItem, showToast]);
+
+  const handleBuyNow = useCallback(() => {
+    if (!product) return;
+    if (product.stock === 0) {
+      showToast('error', 'This product is currently out of stock');
+      return;
+    }
+
+    const variantName = Object.entries(selectedVariants)
+      .map(([key, opt]) => `${key}: ${opt.value}`)
+      .join(', ') || undefined;
+
+    const priceAdjustment = Object.values(selectedVariants).reduce(
+      (sum, opt) => sum + (opt.priceAdjustment || 0),
+      0,
+    );
+
+    // Add to cart first
+    addCartItem({
+      productId: product._id,
+      name: product.name,
+      slug: product.slug,
+      image: product.images[0] ?? '',
+      price: product.price + priceAdjustment,
+      compareAtPrice: product.compareAtPrice,
+      quantity,
+      variant: variantName,
+      stock: product.stock,
+      unit: product.unit,
+    });
+
+    // Navigate to checkout (works for both logged in and guest)
+    navigation.navigate('Checkout');
+  }, [product, quantity, selectedVariants, addCartItem, navigation, showToast]);
 
   const handleToggleWishlist = useCallback(() => {
     if (!product) return;
@@ -380,6 +418,16 @@ export function ProductDetailScreen() {
           <View style={styles.actionButtons}>
             <Button
               variant="primary"
+              size="lg"
+              fullWidth
+              disabled={isOutOfStock}
+              onPress={handleBuyNow}
+            >
+              {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
+            </Button>
+            <View style={{ height: 10 }} />
+            <Button
+              variant="secondary"
               size="lg"
               fullWidth
               disabled={isOutOfStock}

@@ -16,6 +16,8 @@ export type RootStackParamList = {
   OrderDetail: { orderId: string };
   Addresses: undefined;
   ChangePassword: undefined;
+  FAQ: undefined;
+  Policy: { type: 'terms' | 'privacy-policy' | 'refund-policy' | 'shipping-policy' };
 };
 
 export type MainTabParamList = {

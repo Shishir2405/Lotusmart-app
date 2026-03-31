@@ -12,6 +12,8 @@ import { CheckoutScreen } from '../../modules/cart/screens/CheckoutScreen';
 import OrderDetailScreen from '../../modules/orders/screens/OrderDetailScreen';
 import AddressesScreen from '../../modules/users/screens/AddressesScreen';
 import ChangePasswordScreen from '../../modules/users/screens/ChangePasswordScreen';
+import FAQScreen from '../../modules/site-config/screens/FAQScreen';
+import PolicyScreen from '../../modules/site-config/screens/PolicyScreen';
 import { RootStackParamList } from './types';
 import { FONTS } from '../../config/fonts';
 
@@ -74,17 +76,43 @@ export function RootNavigator() {
       {/* Auth screens - for login/register */}
       <Stack.Screen name="Auth" component={AuthNavigator} options={{ headerShown: false }} />
 
+      {/* Checkout - accessible for both logged in and guest users */}
+      <Stack.Screen
+        name="Checkout"
+        component={CheckoutScreen}
+        options={{
+          title: 'Checkout',
+          presentation: 'card',
+        }}
+      />
+
+      {/* Info pages - accessible without login */}
+      <Stack.Screen
+        name="FAQ"
+        component={FAQScreen}
+        options={{
+          title: 'FAQs',
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
+        name="Policy"
+        component={PolicyScreen}
+        options={({ route }: any) => ({
+          title: route.params?.type === 'terms'
+            ? 'Terms & Conditions'
+            : route.params?.type === 'privacy-policy'
+            ? 'Privacy Policy'
+            : route.params?.type === 'refund-policy'
+            ? 'Refund Policy'
+            : 'Shipping Policy',
+          presentation: 'card',
+        })}
+      />
+
       {/* Protected screens - require login */}
       {user && (
         <>
-          <Stack.Screen
-            name="Checkout"
-            component={CheckoutScreen}
-            options={{
-              title: 'Checkout',
-              presentation: 'card',
-            }}
-          />
           <Stack.Screen
             name="OrderDetail"
             component={OrderDetailScreen}
