@@ -21,6 +21,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Skeleton } from '../../../components/ui';
 import { useCategories, useFeaturedProducts, useProducts } from '../hooks';
+import { useFAQs } from '../../site-config/hooks';
+import type { FAQItem } from '../../site-config/api';
 import { ProductCard } from '../components/ProductCard';
 import { ProductListSkeleton } from '../components/ProductListSkeleton';
 import { HomeHeader } from '../../../components/shared/HomeHeader';
@@ -525,32 +527,49 @@ const whyStyles = StyleSheet.create({
 
 // ====== FAQ SECTION ======
 
-const FAQ_DATA = [
+const STATIC_FAQ_DATA: FAQItem[] = [
   {
-    q: 'Are your products 100% natural and chemical-free?',
-    a: 'Yes! All our spices and dry fruits are sourced directly from farms and are 100% natural, without any artificial colours, flavours, or preservatives.',
+    id: '1',
+    question: 'Are your products 100% natural and chemical-free?',
+    answer: 'Yes! All our spices and dry fruits are sourced directly from farms and are 100% natural, without any artificial colours, flavours, or preservatives.',
+    category: 'Products',
+    sortOrder: 1,
   },
   {
-    q: 'Do you offer free shipping?',
-    a: 'Yes, we offer free shipping on all orders above \u20B9499. For orders below \u20B9499, a nominal shipping fee of \u20B949-60 applies.',
+    id: '2',
+    question: 'Do you offer free shipping?',
+    answer: 'Yes, we offer free shipping on all orders above \u20B9499. For orders below \u20B9499, a nominal shipping fee of \u20B949-60 applies.',
+    category: 'Shipping',
+    sortOrder: 2,
   },
   {
-    q: 'What is your return policy?',
-    a: 'We offer hassle-free returns within 7 days of delivery. If you receive damaged or wrong products, we will arrange a full refund or replacement.',
+    id: '3',
+    question: 'What is your return policy?',
+    answer: 'We offer hassle-free returns within 7 days of delivery. If you receive damaged or wrong products, we will arrange a full refund or replacement.',
+    category: 'Returns',
+    sortOrder: 3,
   },
   {
-    q: 'How are the products packaged?',
-    a: 'All products are packed in premium food-grade, airtight packaging to ensure maximum freshness and shelf life.',
+    id: '4',
+    question: 'How are the products packaged?',
+    answer: 'All products are packed in premium food-grade, airtight packaging to ensure maximum freshness and shelf life.',
+    category: 'Products',
+    sortOrder: 4,
   },
   {
-    q: 'Do you deliver across India?',
-    a: 'Yes, we deliver pan-India. Most orders are delivered within 3-7 business days depending on your location.',
+    id: '5',
+    question: 'Do you deliver across India?',
+    answer: 'Yes, we deliver pan-India. Most orders are delivered within 3-7 business days depending on your location.',
+    category: 'Shipping',
+    sortOrder: 5,
   },
 ];
 
-function FAQSection() {
+function FAQSection({ faqs }: { faqs: FAQItem[] }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState<number | null>(null);
+
+  const displayFaqs = faqs.length > 0 ? faqs.slice(0, 5) : STATIC_FAQ_DATA;
 
   return (
     <View style={faqStyles.container}>
@@ -561,15 +580,15 @@ function FAQSection() {
         Got questions? We've got answers
       </Text>
 
-      {FAQ_DATA.map((faq, i) => (
+      {displayFaqs.map((faq, i) => (
         <TouchableOpacity
-          key={i}
+          key={faq.id}
           style={[faqStyles.item, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
           onPress={() => setExpanded(expanded === i ? null : i)}
           activeOpacity={0.7}
         >
           <View style={faqStyles.questionRow}>
-            <Text style={[faqStyles.question, { color: theme.colors.text }]}>{faq.q}</Text>
+            <Text style={[faqStyles.question, { color: theme.colors.text }]}>{faq.question}</Text>
             <Ionicons
               name={expanded === i ? 'remove-circle-outline' : 'add-circle-outline'}
               size={22}
@@ -578,7 +597,7 @@ function FAQSection() {
           </View>
           {expanded === i && (
             <View style={[faqStyles.answerContainer, { borderTopColor: theme.colors.border }]}>
-              <Text style={[faqStyles.answer, { color: theme.colors.textSecondary }]}>{faq.a}</Text>
+              <Text style={[faqStyles.answer, { color: theme.colors.textSecondary }]}>{faq.answer}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -760,18 +779,20 @@ export function HomeScreen() {
   const { data: categoriesRes, isLoading: loadingCategories, refetch: refetchCategories } = useCategories();
   const { data: featuredRes, isLoading: loadingFeatured, refetch: refetchFeatured } = useFeaturedProducts();
   const { data: allProductsRes, isLoading: loadingAll, refetch: refetchAll } = useProducts({ page: 1, limit: 6 });
+  const { data: faqRes, refetch: refetchFAQs } = useFAQs();
 
   const [refreshing, setRefreshing] = useState(false);
 
   const categories = categoriesRes?.data ?? [];
   const featuredProducts = featuredRes?.data ?? [];
   const allProducts = allProductsRes?.data ?? [];
+  const dynamicFAQs: FAQItem[] = faqRes?.data?.value?.items ?? [];
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchCategories(), refetchFeatured(), refetchAll()]);
+    await Promise.all([refetchCategories(), refetchFeatured(), refetchAll(), refetchFAQs()]);
     setRefreshing(false);
-  }, [refetchCategories, refetchFeatured, refetchAll]);
+  }, [refetchCategories, refetchFeatured, refetchAll, refetchFAQs]);
 
   const renderFeaturedProduct = useCallback(
     ({ item }: { item: IProduct }) => (
@@ -903,7 +924,16 @@ export function HomeScreen() {
 
         {/* FAQ Section */}
         <View style={{ marginTop: 32 }}>
-          <FAQSection />
+          <FAQSection faqs={dynamicFAQs} />
+          <TouchableOpacity
+            style={{ alignSelf: 'center', marginTop: 12, paddingVertical: 8, paddingHorizontal: 20 }}
+            onPress={() => navigation.navigate('FAQ' as any)}
+            activeOpacity={0.7}
+          >
+            <Text style={{ color: COLORS.rose, fontFamily: FONTS.body.semiBold, fontSize: 14 }}>
+              View All FAQs
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Newsletter */}

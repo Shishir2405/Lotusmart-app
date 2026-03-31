@@ -84,6 +84,17 @@ export default function ProfileScreen() {
       .slice(0, 2);
   };
 
+  const handleNavigateFAQ = useCallback(() => {
+    (navigation as any).navigate('FAQ');
+  }, [navigation]);
+
+  const handleNavigatePolicy = useCallback(
+    (type: 'terms' | 'privacy-policy' | 'refund-policy' | 'shipping-policy') => {
+      (navigation as any).navigate('Policy', { type });
+    },
+    [navigation],
+  );
+
   const menuItems: MenuItem[] = user
     ? [
         {
@@ -114,6 +125,34 @@ export default function ProfileScreen() {
         },
       ]
     : [];
+
+  const infoItems: MenuItem[] = [
+    {
+      icon: 'help-circle-outline',
+      label: 'FAQs',
+      onPress: handleNavigateFAQ,
+    },
+    {
+      icon: 'document-text-outline',
+      label: 'Terms & Conditions',
+      onPress: () => handleNavigatePolicy('terms'),
+    },
+    {
+      icon: 'shield-checkmark-outline',
+      label: 'Privacy Policy',
+      onPress: () => handleNavigatePolicy('privacy-policy'),
+    },
+    {
+      icon: 'refresh-outline',
+      label: 'Refund Policy',
+      onPress: () => handleNavigatePolicy('refund-policy'),
+    },
+    {
+      icon: 'car-outline',
+      label: 'Shipping Policy',
+      onPress: () => handleNavigatePolicy('shipping-policy'),
+    },
+  ];
 
   const renderMenuItem = (item: MenuItem, index: number) => {
     const isLast = index === menuItems.length - 1;
@@ -287,6 +326,30 @@ export default function ProfileScreen() {
         )}
 
         {/* Menu List */}
+        {menuItems.length > 0 && (
+          <View
+            style={[
+              styles.menuContainer,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+                borderRadius: theme.borderRadius.lg,
+              },
+            ]}
+          >
+            {menuItems.map(renderMenuItem)}
+          </View>
+        )}
+
+        {/* Info & Support */}
+        <Text
+          style={[
+            styles.sectionLabel,
+            { color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs },
+          ]}
+        >
+          INFORMATION & SUPPORT
+        </Text>
         <View
           style={[
             styles.menuContainer,
@@ -297,7 +360,47 @@ export default function ProfileScreen() {
             },
           ]}
         >
-          {menuItems.map(renderMenuItem)}
+          {infoItems.map((item, index) => {
+            const isLast = index === infoItems.length - 1;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                onPress={item.onPress}
+                activeOpacity={0.7}
+                style={[
+                  styles.menuItem,
+                  !isLast && {
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View
+                    style={[
+                      styles.menuIconContainer,
+                      { backgroundColor: (item.color ?? theme.colors.primary) + '12' },
+                    ]}
+                  >
+                    <Ionicons
+                      name={item.icon}
+                      size={20}
+                      color={item.color ?? theme.colors.textSecondary}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.menuLabel,
+                      { color: item.color ?? theme.colors.text, fontSize: theme.fontSizes.base },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Version Info */}
@@ -377,6 +480,13 @@ const styles = StyleSheet.create({
   },
   authButtonWrapper: {
     flex: 1,
+  },
+  sectionLabel: {
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 8,
   },
   menuContainer: {
     marginHorizontal: 16,

@@ -62,12 +62,9 @@ export default function CartScreen() {
   }, [removeCoupon, showToast]);
 
   const handleCheckout = useCallback(() => {
-    if (!user) {
-      (navigation as any).navigate('Auth', { screen: 'Login' });
-      return;
-    }
+    // Allow both logged-in and guest checkout
     navigation.navigate('Checkout');
-  }, [user, navigation]);
+  }, [navigation]);
 
   const handleShopNow = useCallback(() => {
     (navigation as any).navigate('Products', { screen: 'Home' });
@@ -322,15 +319,9 @@ export default function CartScreen() {
 
       {/* Checkout Button */}
       <View style={styles.checkoutButtonContainer}>
-        {user ? (
-          <Button size="lg" fullWidth onPress={handleCheckout}>
-            Proceed to Checkout
-          </Button>
-        ) : (
-          <Button size="lg" fullWidth variant="secondary" onPress={handleCheckout}>
-            Login to Checkout
-          </Button>
-        )}
+        <Button size="lg" fullWidth onPress={handleCheckout}>
+          Proceed to Checkout
+        </Button>
       </View>
     </View>
   );

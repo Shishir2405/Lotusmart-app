@@ -14,23 +14,7 @@ import { FONTS } from '../../../config/fonts';
 import { useFAQs } from '../hooks';
 import { FAQItem } from '../api';
 
-const CATEGORIES = ['All', 'Products', 'Shipping', 'Returns', 'General'];
-
-const categoryColors: Record<string, { color: string; light: string }> = {
-  Products: { color: '#5C6B3C', light: '#E8EDDD' },
-  Shipping: { color: '#B59F6B', light: '#F5F0E1' },
-  Returns: { color: '#E8567F', light: '#FFF1F3' },
-  General: { color: '#3B82F6', light: '#EFF6FF' },
-};
-
-const categoryIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Products: 'leaf-outline',
-  Shipping: 'car-outline',
-  Returns: 'shield-checkmark-outline',
-  General: 'help-circle-outline',
-};
-
-const defaultFAQs: FAQItem[] = [
+const DEFAULT_FAQS: FAQItem[] = [
   {
     id: '1',
     question: 'Are all your products 100% natural with no additives?',
@@ -99,7 +83,7 @@ const defaultFAQs: FAQItem[] = [
     id: '9',
     question: 'How can I contact customer support?',
     answer:
-      'You can reach us via email at support@lotusmart.in, call us at +91-9876543210, or use the WhatsApp chat. Our support team is available Monday to Saturday, 9 AM to 7 PM.',
+      'You can reach us via email at support@lotusmart.in, call us at +91-9876543210, or use the WhatsApp chat on our website. Our support team is available Monday to Saturday, 9 AM to 7 PM.',
     category: 'General',
     sortOrder: 1,
   },
@@ -113,26 +97,40 @@ const defaultFAQs: FAQItem[] = [
   },
 ];
 
+const CATEGORIES = ['All', 'Products', 'Shipping', 'Returns', 'General'];
+
+const CATEGORY_COLORS: Record<string, { color: string; bg: string }> = {
+  Products: { color: '#5C6B3C', bg: '#E8EDDD' },
+  Shipping: { color: '#B59F6B', bg: '#F5F0E1' },
+  Returns: { color: '#E8567F', bg: '#FFF1F3' },
+  General: { color: '#3B82F6', bg: '#EFF6FF' },
+};
+
+const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Products: 'leaf-outline',
+  Shipping: 'car-outline',
+  Returns: 'shield-checkmark-outline',
+  General: 'help-circle-outline',
+};
+
 export default function FAQScreen() {
   const { theme } = useTheme();
   const { data: faqRes, isLoading } = useFAQs();
-
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const faqs: FAQItem[] = useMemo(() => {
     const items = faqRes?.data?.value?.items;
-    return Array.isArray(items) && items.length > 0 ? items : defaultFAQs;
+    if (Array.isArray(items) && items.length > 0) return items;
+    return DEFAULT_FAQS;
   }, [faqRes]);
 
   const filteredFAQs = useMemo(() => {
     let result = [...faqs];
-
     if (activeCategory !== 'All') {
       result = result.filter((f) => f.category === activeCategory);
     }
-
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -141,12 +139,19 @@ export default function FAQScreen() {
           f.answer.toLowerCase().includes(q),
       );
     }
-
     return result.sort((a, b) => a.sortOrder - b.sortOrder);
   }, [faqs, activeCategory, search]);
 
-  const getColor = (category: string) =>
-    categoryColors[category] ?? categoryColors.General;
+  const getCategoryStyle = (cat: string) =>
+    CATEGORY_COLORS[cat] ?? { color: '#E8567F', bg: '#FFF1F3' };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -154,31 +159,28 @@ export default function FAQScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: '#FFF8F0' }]}>
-        <Text style={[styles.headerTag, { color: '#B59F6B' }]}>Help Center</Text>
+      <View style={[styles.header, { backgroundColor: theme.colors.primaryLight }]}>
+        <Text style={[styles.headerTag, { color: theme.colors.accent }]}>Help Center</Text>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
           Frequently Asked{' '}
-          <Text style={{ color: '#E8567F' }}>Questions</Text>
+          <Text style={{ color: theme.colors.primary }}>Questions</Text>
         </Text>
         <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
           Everything you need to know about LotusMart
         </Text>
       </View>
 
-      <View style={{ padding: 16 }}>
+      <View style={styles.content}>
         {/* Search */}
         <View
           style={[
             styles.searchContainer,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.border,
-            },
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
           ]}
         >
           <Ionicons name="search-outline" size={18} color={theme.colors.textSecondary} />
           <TextInput
-            style={[styles.searchInput, { color: theme.colors.text }]}
+            style={[styles.searchInput, { color: theme.colors.text, fontSize: theme.fontSizes.sm }]}
             placeholder="Search FAQs..."
             placeholderTextColor={theme.colors.textSecondary}
             value={search}
@@ -186,30 +188,35 @@ export default function FAQScreen() {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Text style={[styles.clearText, { color: '#E8567F' }]}>Clear</Text>
+              <Text style={{ color: theme.colors.primary, fontFamily: FONTS.body.semiBold, fontSize: 12 }}>
+                Clear
+              </Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Category Filters */}
+        {/* Category Filter */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.categoriesRow}
+          contentContainerStyle={styles.categoryRow}
         >
           {CATEGORIES.map((cat) => {
             const isActive = activeCategory === cat;
-            const colors = cat !== 'All' ? getColor(cat) : { color: '#E8567F', light: '#FFF1F3' };
-            const icon = categoryIcons[cat];
-
+            const catStyle = cat !== 'All' ? getCategoryStyle(cat) : null;
+            const icon = CATEGORY_ICONS[cat];
             return (
               <TouchableOpacity
                 key={cat}
                 style={[
-                  styles.categoryChip,
+                  styles.categoryPill,
                   {
-                    backgroundColor: isActive ? colors.light : '#F7F6F0',
-                    borderColor: isActive ? colors.color + '40' : theme.colors.border,
+                    backgroundColor: isActive
+                      ? catStyle?.bg ?? theme.colors.primaryLight
+                      : theme.colors.surface,
+                    borderColor: isActive
+                      ? catStyle?.color ?? theme.colors.primary
+                      : theme.colors.border,
                   },
                 ]}
                 onPress={() => {
@@ -222,20 +229,24 @@ export default function FAQScreen() {
                   <Ionicons
                     name={icon}
                     size={14}
-                    color={isActive ? colors.color : theme.colors.textSecondary}
+                    color={isActive ? catStyle?.color ?? theme.colors.primary : theme.colors.textSecondary}
                   />
                 )}
                 <Text
                   style={[
-                    styles.categoryChipText,
-                    { color: isActive ? colors.color : theme.colors.textSecondary },
+                    styles.categoryText,
+                    {
+                      color: isActive
+                        ? catStyle?.color ?? theme.colors.primary
+                        : theme.colors.textSecondary,
+                    },
                   ]}
                 >
                   {cat}
                 </Text>
                 {isActive && (
-                  <View style={[styles.countBadge, { backgroundColor: colors.color }]}>
-                    <Text style={styles.countBadgeText}>{filteredFAQs.length}</Text>
+                  <View style={[styles.categoryCount, { backgroundColor: catStyle?.color ?? theme.colors.primary }]}>
+                    <Text style={styles.categoryCountText}>{filteredFAQs.length}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -244,41 +255,22 @@ export default function FAQScreen() {
         </ScrollView>
 
         {/* FAQ List */}
-        {isLoading ? (
-          <ActivityIndicator
-            size="large"
-            color={theme.colors.primary}
-            style={{ marginTop: 40 }}
-          />
-        ) : filteredFAQs.length === 0 ? (
+        {filteredFAQs.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="search-outline" size={36} color={theme.colors.border} />
-            <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-              No FAQs found
-            </Text>
+            <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No FAQs found</Text>
             <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
               Try a different search term or category
             </Text>
           </View>
         ) : (
-          <View
-            style={[
-              styles.faqList,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
+          <View style={[styles.faqList, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             {filteredFAQs.map((faq, index) => {
               const isOpen = expandedId === faq.id;
-              const colors = getColor(faq.category);
-
+              const catStyle = getCategoryStyle(faq.category);
               return (
                 <TouchableOpacity
                   key={faq.id}
-                  onPress={() => setExpandedId(isOpen ? null : faq.id)}
-                  activeOpacity={0.7}
                   style={[
                     styles.faqItem,
                     index < filteredFAQs.length - 1 && {
@@ -286,6 +278,8 @@ export default function FAQScreen() {
                       borderBottomColor: theme.colors.border,
                     },
                   ]}
+                  onPress={() => setExpandedId(isOpen ? null : faq.id)}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.questionRow}>
                     <Text
@@ -300,23 +294,21 @@ export default function FAQScreen() {
                       style={[
                         styles.toggleIcon,
                         {
-                          backgroundColor: isOpen ? colors.color : '#F7F6F0',
-                          borderColor: isOpen ? 'transparent' : theme.colors.border,
+                          backgroundColor: isOpen ? catStyle.color : theme.colors.background,
+                          borderColor: isOpen ? catStyle.color : theme.colors.border,
                         },
                       ]}
                     >
                       <Ionicons
                         name={isOpen ? 'remove' : 'add'}
                         size={14}
-                        color={isOpen ? '#FFFFFF' : '#B8AE86'}
+                        color={isOpen ? '#FFFFFF' : theme.colors.textSecondary}
                       />
                     </View>
                   </View>
                   {isOpen && (
-                    <View style={[styles.answerContainer, { borderTopColor: theme.colors.border }]}>
-                      <View
-                        style={[styles.answerAccent, { backgroundColor: colors.color + '60' }]}
-                      />
+                    <View style={styles.answerContainer}>
+                      <View style={[styles.answerBar, { backgroundColor: catStyle.color }]} />
                       <Text style={[styles.answer, { color: theme.colors.textSecondary }]}>
                         {faq.answer}
                       </Text>
@@ -328,23 +320,19 @@ export default function FAQScreen() {
           </View>
         )}
 
-        {/* Contact CTA */}
-        <View style={[styles.contactCTA, { backgroundColor: '#FFF1F3', borderColor: '#FECDD3' }]}>
+        {/* Still have questions */}
+        <View style={[styles.contactCard, { backgroundColor: '#FFF1F3', borderColor: '#FECDD3' }]}>
           <Ionicons name="help-circle-outline" size={32} color="#E8567F" />
           <Text style={[styles.contactTitle, { color: theme.colors.text }]}>
             Still have questions?
           </Text>
           <Text style={[styles.contactSubtitle, { color: theme.colors.textSecondary }]}>
-            Our support team is available Monday to Saturday, 9 AM to 7 PM.
+            Our support team is available Monday to Saturday, 9 AM to 7 PM. We are always happy to help.
           </Text>
-          <TouchableOpacity style={styles.contactButton} activeOpacity={0.8}>
-            <Text style={styles.contactButtonText}>Contact Us</Text>
-            <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
-          </TouchableOpacity>
         </View>
-      </View>
 
-      <View style={{ height: 40 }} />
+        <View style={{ height: 32 }} />
+      </View>
     </ScrollView>
   );
 }
@@ -355,119 +343,72 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 28,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EBE8D8',
+    paddingVertical: 24,
   },
   headerTag: {
     fontFamily: FONTS.body.bold,
     fontSize: 10,
-    letterSpacing: 2.5,
+    letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   headerTitle: {
     fontFamily: FONTS.heading.bold,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 32,
     marginBottom: 6,
   },
   headerSubtitle: {
     fontFamily: FONTS.body.regular,
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 20,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
     gap: 10,
     marginBottom: 16,
   },
   searchInput: {
     flex: 1,
     fontFamily: FONTS.body.regular,
-    fontSize: 14,
     padding: 0,
   },
-  clearText: {
-    fontFamily: FONTS.body.semiBold,
-    fontSize: 12,
+  categoryRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 16,
   },
-  categoriesRow: {
-    marginBottom: 20,
-  },
-  categoryChip: {
+  categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    marginRight: 8,
     gap: 6,
   },
-  categoryChipText: {
+  categoryText: {
     fontFamily: FONTS.body.semiBold,
-    fontSize: 13,
+    fontSize: 12,
   },
-  countBadge: {
+  categoryCount: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  countBadgeText: {
+  categoryCountText: {
     fontFamily: FONTS.body.bold,
-    color: '#FFFFFF',
     fontSize: 10,
-  },
-  faqList: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  faqItem: {
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-  questionRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  question: {
-    fontFamily: FONTS.body.semiBold,
-    fontSize: 14,
-    lineHeight: 20,
-    flex: 1,
-  },
-  toggleIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    marginTop: -2,
-  },
-  answerContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
-  answerAccent: {
-    width: 32,
-    height: 2,
-    borderRadius: 1,
-    marginBottom: 10,
-  },
-  answer: {
-    fontFamily: FONTS.body.medium,
-    fontSize: 13,
-    lineHeight: 22,
+    color: '#FFFFFF',
   },
   emptyState: {
     alignItems: 'center',
@@ -476,43 +417,74 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: FONTS.body.semiBold,
-    fontSize: 16,
+    fontSize: 15,
   },
   emptySubtitle: {
     fontFamily: FONTS.body.regular,
     fontSize: 13,
   },
-  contactCTA: {
-    alignItems: 'center',
+  faqList: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 28,
+    overflow: 'hidden',
+  },
+  faqItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  questionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  question: {
+    flex: 1,
+    fontFamily: FONTS.body.semiBold,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  toggleIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -2,
+  },
+  answerContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  answerBar: {
+    width: 28,
+    height: 2,
+    borderRadius: 1,
+    marginBottom: 10,
+    opacity: 0.4,
+  },
+  answer: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 13,
+    lineHeight: 22,
+  },
+  contactCard: {
     marginTop: 24,
-    gap: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
   },
   contactTitle: {
     fontFamily: FONTS.body.bold,
-    fontSize: 18,
+    fontSize: 16,
+    marginTop: 12,
+    marginBottom: 6,
   },
   contactSubtitle: {
-    fontFamily: FONTS.body.medium,
+    fontFamily: FONTS.body.regular,
     fontSize: 13,
-    textAlign: 'center',
     lineHeight: 20,
-  },
-  contactButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8567F',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-    marginTop: 8,
-  },
-  contactButtonText: {
-    fontFamily: FONTS.body.semiBold,
-    color: '#FFFFFF',
-    fontSize: 14,
+    textAlign: 'center',
   },
 });
