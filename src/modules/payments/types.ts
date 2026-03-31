@@ -14,3 +14,9 @@ export interface PaymentVerifyData {
   razorpayOrderId: string;
   razorpaySignature: string;
 }
+
+export interface RazorpaySuccessResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}

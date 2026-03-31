@@ -565,7 +565,7 @@ const STATIC_FAQ_DATA: FAQItem[] = [
   },
 ];
 
-function FAQSection({ faqs }: { faqs: FAQItem[] }) {
+function FAQSection({ faqs, onViewAll }: { faqs: FAQItem[]; onViewAll: () => void }) {
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState<number | null>(null);
 
@@ -602,6 +602,11 @@ function FAQSection({ faqs }: { faqs: FAQItem[] }) {
           )}
         </TouchableOpacity>
       ))}
+
+      <TouchableOpacity style={faqStyles.viewAllBtn} onPress={onViewAll} activeOpacity={0.7}>
+        <Text style={[faqStyles.viewAllText, { color: theme.colors.primary }]}>View All FAQs</Text>
+        <Ionicons name="arrow-forward" size={14} color={theme.colors.primary} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -649,6 +654,18 @@ const faqStyles = StyleSheet.create({
     fontFamily: FONTS.body.regular,
     fontSize: 13,
     lineHeight: 20,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 6,
+    paddingVertical: 12,
+  },
+  viewAllText: {
+    fontFamily: FONTS.body.semiBold,
+    fontSize: 14,
   },
 });
 
@@ -924,26 +941,98 @@ export function HomeScreen() {
 
         {/* FAQ Section */}
         <View style={{ marginTop: 32 }}>
-          <FAQSection faqs={dynamicFAQs} />
-          <TouchableOpacity
-            style={{ alignSelf: 'center', marginTop: 12, paddingVertical: 8, paddingHorizontal: 20 }}
-            onPress={() => navigation.navigate('FAQ' as any)}
-            activeOpacity={0.7}
-          >
-            <Text style={{ color: COLORS.rose, fontFamily: FONTS.body.semiBold, fontSize: 14 }}>
-              View All FAQs
-            </Text>
-          </TouchableOpacity>
+          <FAQSection faqs={dynamicFAQs} onViewAll={() => navigation.navigate('FAQ' as any)} />
         </View>
 
         {/* Newsletter */}
-        <View style={{ marginTop: 32, marginBottom: 40 }}>
+        <View style={{ marginTop: 32 }}>
           <NewsletterSection />
+        </View>
+
+        {/* Footer Links */}
+        <View style={[footerStyles.container, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+          <Text style={[footerStyles.heading, { color: theme.colors.text }]}>LotusMart</Text>
+          <Text style={[footerStyles.tagline, { color: theme.colors.textSecondary }]}>
+            Premium Spices, Dry Fruits & Gifting
+          </Text>
+
+          <View style={footerStyles.linksRow}>
+            <TouchableOpacity onPress={() => navigation.navigate('FAQ' as any)} style={footerStyles.linkItem}>
+              <Ionicons name="help-circle-outline" size={16} color={theme.colors.textSecondary} />
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>FAQs</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'terms' })} style={footerStyles.linkItem}>
+              <Ionicons name="document-text-outline" size={16} color={theme.colors.textSecondary} />
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Terms & Conditions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'privacy-policy' })} style={footerStyles.linkItem}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.textSecondary} />
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Privacy Policy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'refund-policy' })} style={footerStyles.linkItem}>
+              <Ionicons name="refresh-outline" size={16} color={theme.colors.textSecondary} />
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Refund Policy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'shipping-policy' })} style={footerStyles.linkItem}>
+              <Ionicons name="car-outline" size={16} color={theme.colors.textSecondary} />
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Shipping Policy</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[footerStyles.divider, { borderTopColor: theme.colors.border }]} />
+          <Text style={[footerStyles.copyright, { color: theme.colors.textSecondary }]}>
+            {'\u00A9'} 2026 LotusMart. All rights reserved.
+          </Text>
         </View>
       </ScrollView>
     </View>
   );
 }
+
+const footerStyles = StyleSheet.create({
+  container: {
+    marginTop: 32,
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+    borderTopWidth: 1,
+  },
+  heading: {
+    fontFamily: FONTS.heading.bold,
+    fontSize: 20,
+    textAlign: 'center',
+  },
+  tagline: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  linksRow: {
+    gap: 4,
+  },
+  linkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+  },
+  linkText: {
+    fontFamily: FONTS.body.medium,
+    fontSize: 14,
+  },
+  divider: {
+    borderTopWidth: 1,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  copyright: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
