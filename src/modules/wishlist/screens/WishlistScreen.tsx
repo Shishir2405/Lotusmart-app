@@ -1,10 +1,6 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +11,8 @@ import { useWishlistStore } from '../../../store/wishlist.store';
 import { useCartStore } from '../../../store/cart.store';
 import { WishlistItem } from '../components/WishlistItem';
 import { IWishlistItem } from '../../../types';
+import { FONTS } from '../../../config/fonts';
+import { COLORS } from '../../../config/constants';
 
 export default function WishlistScreen() {
   const { theme } = useTheme();
@@ -50,35 +48,29 @@ export default function WishlistScreen() {
   );
 
   const handleExplore = useCallback(() => {
-    (navigation as any).navigate('Products', { screen: 'Home' });
+    (navigation as ReturnType<typeof useNavigation>).navigate(
+      'Main' as never,
+      { screen: 'HomeTab' } as never,
+    );
   }, [navigation]);
 
   const renderItem = useCallback(
     ({ item }: { item: IWishlistItem }) => (
-      <WishlistItem
-        item={item}
-        onAddToCart={handleAddToCart}
-        onRemove={handleRemove}
-      />
+      <WishlistItem item={item} onAddToCart={handleAddToCart} onRemove={handleRemove} />
     ),
     [handleAddToCart, handleRemove],
   );
 
-  const keyExtractor = useCallback(
-    (item: IWishlistItem) => item.productId,
-    [],
-  );
+  const keyExtractor = useCallback((item: IWishlistItem) => item.productId, []);
 
   if (items.length === 0) {
     return (
-      <SafeAreaView
-        style={[styles.safe, { backgroundColor: theme.colors.background }]}
-      >
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
           <Text
             style={[
               styles.headerTitle,
-              { color: theme.colors.text, fontSize: theme.fontSizes['2xl'] },
+              { color: theme.colors.text, fontFamily: FONTS.heading.bold },
             ]}
           >
             My Wishlist
@@ -86,40 +78,35 @@ export default function WishlistScreen() {
         </View>
 
         <View style={styles.emptyContainer}>
-          <View
-            style={[
-              styles.emptyIconContainer,
-              { backgroundColor: theme.colors.primary + '14' },
-            ]}
+          <Animated.View
+            entering={FadeIn.duration(500)}
+            style={[styles.emptyIconContainer, { backgroundColor: COLORS.roseLight }]}
           >
-            <Ionicons
-              name="heart-outline"
-              size={48}
-              color={theme.colors.primary}
-            />
-          </View>
-          <Text
+            <Ionicons name="heart-outline" size={48} color={COLORS.rose} />
+          </Animated.View>
+          <Animated.Text
+            entering={FadeInDown.delay(200).duration(400)}
             style={[
               styles.emptyTitle,
-              { color: theme.colors.text, fontSize: theme.fontSizes['2xl'] },
+              { color: theme.colors.text, fontFamily: FONTS.heading.bold },
             ]}
           >
             Your wishlist is empty
-          </Text>
-          <Text
+          </Animated.Text>
+          <Animated.Text
+            entering={FadeInDown.delay(300).duration(400)}
             style={[
               styles.emptySubtitle,
-              {
-                color: theme.colors.textSecondary,
-                fontSize: theme.fontSizes.sm,
-              },
+              { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
             ]}
           >
             Save items you love to your wishlist and revisit them anytime
-          </Text>
-          <Button size="lg" onPress={handleExplore}>
-            Explore Products
-          </Button>
+          </Animated.Text>
+          <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+            <Button size="lg" onPress={handleExplore}>
+              Explore Products
+            </Button>
+          </Animated.View>
         </View>
       </SafeAreaView>
     );
@@ -132,29 +119,14 @@ export default function WishlistScreen() {
     >
       <View style={styles.header}>
         <Text
-          style={[
-            styles.headerTitle,
-            { color: theme.colors.text, fontSize: theme.fontSizes['2xl'] },
-          ]}
+          style={[styles.headerTitle, { color: theme.colors.text, fontFamily: FONTS.heading.bold }]}
         >
           My Wishlist
         </Text>
-        <View
-          style={[
-            styles.countBadge,
-            { backgroundColor: theme.colors.primary + '18' },
-          ]}
-        >
-          <Text
-            style={[
-              styles.countText,
-              {
-                color: theme.colors.primary,
-                fontSize: theme.fontSizes.xs,
-              },
-            ]}
-          >
-            {items.length} {items.length === 1 ? 'item' : 'items'}
+        <View style={[styles.countBadge, { backgroundColor: COLORS.rose + '18' }]}>
+          <Ionicons name="heart" size={12} color={COLORS.rose} />
+          <Text style={[styles.countText, { color: COLORS.rose, fontFamily: FONTS.body.semiBold }]}>
+            {items.length}
           </Text>
         </View>
       </View>
@@ -173,36 +145,27 @@ export default function WishlistScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-  },
+  safe: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    gap: 12,
+    gap: 10,
   },
-  headerTitle: {
-    fontWeight: '700',
-  },
+  headerTitle: { fontSize: 24 },
   countBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 9999,
+    gap: 4,
   },
-  countText: {
-    fontWeight: '600',
-  },
-  listContent: {
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    paddingBottom: 32,
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
+  countText: { fontSize: 12 },
+  listContent: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 32 },
+  columnWrapper: { justifyContent: 'space-between' },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -210,21 +173,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyIconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
-  emptyTitle: {
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
-  },
+  emptyTitle: { fontSize: 22, marginBottom: 8, textAlign: 'center' },
+  emptySubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
 });
