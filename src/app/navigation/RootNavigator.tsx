@@ -41,18 +41,21 @@ export function RootNavigator() {
         },
         headerShadowVisible: false,
         animation: 'slide_from_right',
+        animationDuration: 250,
+        gestureEnabled: true,
       }}
     >
-      {/* Main tabs are always accessible (anonymous browsing) */}
+      {/* Main tabs */}
       <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
 
-      {/* Product browsing screens - accessible without login */}
+      {/* Product screens */}
       <Stack.Screen
         name="ProductDetail"
         component={ProductDetailScreen}
         options={{
           title: 'Product Details',
-          presentation: 'card',
+          animation: 'slide_from_right',
+          headerBackTitle: 'Back',
         }}
       />
       <Stack.Screen
@@ -60,57 +63,67 @@ export function RootNavigator() {
         component={ProductListScreen}
         options={{
           title: 'Products',
-          presentation: 'card',
+          animation: 'slide_from_right',
         }}
       />
       <Stack.Screen
         name="Search"
         component={SearchScreen}
         options={{
-          title: 'Search',
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
+          headerShown: false,
+          animation: 'fade_from_bottom',
+          animationDuration: 200,
+          presentation: 'transparentModal',
         }}
       />
 
-      {/* Auth screens - for login/register */}
-      <Stack.Screen name="Auth" component={AuthNavigator} options={{ headerShown: false }} />
+      {/* Auth */}
+      <Stack.Screen
+        name="Auth"
+        component={AuthNavigator}
+        options={{
+          headerShown: false,
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+        }}
+      />
 
-      {/* Checkout - accessible for both logged in and guest users */}
+      {/* Checkout */}
       <Stack.Screen
         name="Checkout"
         component={CheckoutScreen}
         options={{
           title: 'Checkout',
-          presentation: 'card',
+          animation: 'slide_from_right',
         }}
       />
 
-      {/* Info pages - accessible without login */}
+      {/* Info pages */}
       <Stack.Screen
         name="FAQ"
         component={FAQScreen}
         options={{
           title: 'FAQs',
-          presentation: 'card',
+          animation: 'slide_from_right',
         }}
       />
       <Stack.Screen
         name="Policy"
         component={PolicyScreen}
-        options={({ route }: any) => ({
-          title: route.params?.type === 'terms'
-            ? 'Terms & Conditions'
-            : route.params?.type === 'privacy-policy'
-            ? 'Privacy Policy'
-            : route.params?.type === 'refund-policy'
-            ? 'Refund Policy'
-            : 'Shipping Policy',
-          presentation: 'card',
+        options={({ route }: { route: { params?: { type?: string } } }) => ({
+          title:
+            route.params?.type === 'terms'
+              ? 'Terms & Conditions'
+              : route.params?.type === 'privacy-policy'
+                ? 'Privacy Policy'
+                : route.params?.type === 'refund-policy'
+                  ? 'Refund Policy'
+                  : 'Shipping Policy',
+          animation: 'slide_from_right',
         })}
       />
 
-      {/* Protected screens - require login */}
+      {/* Protected screens */}
       {user && (
         <>
           <Stack.Screen
@@ -118,7 +131,7 @@ export function RootNavigator() {
             component={OrderDetailScreen}
             options={{
               title: 'Order Details',
-              presentation: 'card',
+              animation: 'slide_from_right',
             }}
           />
           <Stack.Screen
@@ -126,7 +139,7 @@ export function RootNavigator() {
             component={AddressesScreen}
             options={{
               title: 'My Addresses',
-              presentation: 'card',
+              animation: 'slide_from_right',
             }}
           />
           <Stack.Screen
@@ -134,7 +147,7 @@ export function RootNavigator() {
             component={ChangePasswordScreen}
             options={{
               title: 'Change Password',
-              presentation: 'card',
+              animation: 'slide_from_right',
             }}
           />
         </>
