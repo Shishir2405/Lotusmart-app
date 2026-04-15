@@ -31,6 +31,7 @@ import { useWishlistStore } from '../../../store/wishlist.store';
 import { formatCurrency, getDiscountPercentage } from '../../../utils/helpers';
 import { IProductVariantOption } from '../../../types';
 import { ProductStackParamList } from '../types';
+import RenderHtml from 'react-native-render-html';
 import { FONTS } from '../../../config/fonts';
 import { COLORS } from '../../../config/constants';
 
@@ -616,17 +617,25 @@ export function ProductDetailScreen() {
 
         {/* Description */}
         <CollapsibleSection title="Description" defaultOpen>
-          <Text
-            style={{
-              color: theme.colors.textSecondary,
-              fontSize: 14,
-              lineHeight: 22,
-              paddingHorizontal: 16,
-              fontFamily: FONTS.body.regular,
-            }}
-          >
-            {product.description}
-          </Text>
+          <View style={{ paddingHorizontal: 16 }}>
+            <RenderHtml
+              contentWidth={SCREEN_WIDTH - 32}
+              source={{ html: product.description || '' }}
+              baseStyle={{
+                color: theme.colors.textSecondary,
+                fontSize: 14,
+                lineHeight: 22,
+                fontFamily: FONTS.body.regular,
+              }}
+              tagsStyles={{
+                p: { marginVertical: 4 },
+                strong: { color: theme.colors.text, fontFamily: FONTS.body.bold },
+                b: { color: theme.colors.text, fontFamily: FONTS.body.bold },
+                u: { textDecorationLine: 'underline' },
+                li: { marginVertical: 2 },
+              }}
+            />
+          </View>
         </CollapsibleSection>
 
         {/* Nutrition Info */}

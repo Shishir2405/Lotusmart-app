@@ -1,13 +1,9 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { ICategory } from '../../../types';
+import { FONTS } from '../../../config/fonts';
+import { COLORS } from '../../../config/constants';
 
 interface CategoryChipProps {
   categories: ICategory[];
@@ -31,11 +27,8 @@ const ChipItem = React.memo(function ChipItem({ category, isActive, onPress }: C
       style={[
         styles.chip,
         {
-          borderRadius: theme.borderRadius.full,
-          borderColor: isActive ? theme.colors.primary : theme.colors.border,
-          backgroundColor: isActive ? theme.colors.primary : 'transparent',
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: theme.spacing.sm,
+          borderColor: isActive ? COLORS.rose : theme.colors.border,
+          backgroundColor: isActive ? COLORS.rose : theme.colors.surface,
         },
       ]}
     >
@@ -44,7 +37,7 @@ const ChipItem = React.memo(function ChipItem({ category, isActive, onPress }: C
           styles.chipText,
           {
             color: isActive ? '#FFFFFF' : theme.colors.text,
-            fontSize: theme.fontSizes.sm,
+            fontFamily: isActive ? FONTS.body.bold : FONTS.body.medium,
           },
         ]}
       >
@@ -55,8 +48,6 @@ const ChipItem = React.memo(function ChipItem({ category, isActive, onPress }: C
 });
 
 export function CategoryChip({ categories, selectedId, onSelect }: CategoryChipProps) {
-  const { theme } = useTheme();
-
   const allChip = { _id: 'all', name: 'All' };
   const data = [allChip, ...categories];
 
@@ -81,21 +72,28 @@ export function CategoryChip({ categories, selectedId, onSelect }: CategoryChipP
       keyExtractor={(item) => item._id}
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[styles.list, { paddingHorizontal: theme.spacing.lg }]}
-      ItemSeparatorComponent={() => <View style={{ width: theme.spacing.sm }} />}
+      contentContainerStyle={styles.list}
+      ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
     />
   );
 }
 
 const styles = StyleSheet.create({
   list: {
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   chip: {
     borderWidth: 1.5,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    height: 38,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chipText: {
-    fontWeight: '600',
+    fontSize: 13,
     letterSpacing: 0.2,
   },
 });

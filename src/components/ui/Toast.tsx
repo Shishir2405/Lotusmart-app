@@ -1,21 +1,8 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-} from 'react-native';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Animated, Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme/ThemeContext';
-import type { Theme } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
+import { FONTS } from '../../config/fonts';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -37,60 +24,40 @@ export function useToast(): ToastContextValue {
   return ctx;
 }
 
-const iconMap: Record<ToastType, string> = {
-  success: '\u2713',
-  error: '!',
-  warning: '\u26A0',
-  info: 'i',
+const toastConfig: Record<
+  ToastType,
+  { bg: string; icon: keyof typeof Ionicons.glyphMap; iconColor: string; textColor: string }
+> = {
+  success: {
+    bg: '#ECFDF5',
+    icon: 'checkmark-circle',
+    iconColor: '#10B981',
+    textColor: '#065F46',
+  },
+  error: {
+    bg: '#FEF2F2',
+    icon: 'close-circle',
+    iconColor: '#EF4444',
+    textColor: '#991B1B',
+  },
+  warning: {
+    bg: '#FFFBEB',
+    icon: 'warning',
+    iconColor: '#F59E0B',
+    textColor: '#92400E',
+  },
+  info: {
+    bg: '#EFF6FF',
+    icon: 'information-circle',
+    iconColor: '#3B82F6',
+    textColor: '#1E40AF',
+  },
 };
 
-function getToastColors(
-  type: ToastType,
-  theme: Theme,
-): { bg: string; border: string; text: string; icon: string } {
-  switch (type) {
-    case 'success':
-      return {
-        bg: theme.colors.success + '14',
-        border: theme.colors.success,
-        text: theme.colors.text,
-        icon: theme.colors.success,
-      };
-    case 'error':
-      return {
-        bg: theme.colors.error + '14',
-        border: theme.colors.error,
-        text: theme.colors.text,
-        icon: theme.colors.error,
-      };
-    case 'warning':
-      return {
-        bg: theme.colors.warning + '14',
-        border: theme.colors.warning,
-        text: theme.colors.text,
-        icon: theme.colors.warning,
-      };
-    case 'info':
-      return {
-        bg: theme.colors.info + '14',
-        border: theme.colors.info,
-        text: theme.colors.text,
-        icon: theme.colors.info,
-      };
-  }
-}
-
-function ToastItem({
-  toast,
-  onDismiss,
-}: {
-  toast: ToastMessage;
-  onDismiss: (id: number) => void;
-}) {
-  const { theme } = useTheme();
-  const translateY = useRef(new Animated.Value(-80)).current;
+function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: number) => void }) {
+  const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  const colors = getToastColors(toast.type, theme);
+  const config = toastConfig[toast.type];
 
   useEffect(() => {
     Animated.parallel([
@@ -98,7 +65,7 @@ function ToastItem({
         toValue: 0,
         useNativeDriver: true,
         speed: 14,
-        bounciness: 5,
+        bounciness: 4,
       }),
       Animated.timing(opacity, {
         toValue: 1,
@@ -110,7 +77,7 @@ function ToastItem({
     const timer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(translateY, {
-          toValue: -80,
+          toValue: -100,
           duration: 250,
           useNativeDriver: true,
         }),
@@ -132,33 +99,25 @@ function ToastItem({
       style={[
         styles.toastItem,
         {
-          backgroundColor: colors.bg,
-          borderLeftColor: colors.border,
-          borderRadius: theme.borderRadius.md,
+          backgroundColor: config.bg,
           transform: [{ translateY }],
           opacity,
         },
       ]}
     >
-      <View
-        style={[
-          styles.iconCircle,
-          { backgroundColor: colors.icon + '20' },
-        ]}
-      >
-        <Text style={[styles.iconText, { color: colors.icon }]}>
-          {iconMap[toast.type]}
-        </Text>
-      </View>
+      <Ionicons name={config.icon} size={22} color={config.iconColor} />
       <Text
-        style={[
-          styles.message,
-          { color: colors.text, fontSize: theme.fontSizes.sm },
-        ]}
+        style={[styles.message, { color: config.textColor, fontFamily: FONTS.body.medium }]}
         numberOfLines={2}
       >
         {toast.message}
       </Text>
+      <TouchableOpacity
+        onPress={() => onDismiss(toast.id)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="close" size={18} color={config.textColor + '80'} />
+      </TouchableOpacity>
     </Animated.View>
   );
 }
@@ -168,9 +127,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const idRef = useRef(0);
   let insets = { top: 0 };
   try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     insets = useSafeAreaInsets();
   } catch {
-    // safe area context not available, use default
+    // safe area context not available
   }
 
   const showToast = useCallback((type: ToastType, message: string) => {
@@ -186,10 +146,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       <View
-        style={[
-          styles.toastContainer,
-          { top: insets.top + (Platform.OS === 'ios' ? 8 : 16) },
-        ]}
+        style={[styles.toastContainer, { top: insets.top + (Platform.OS === 'ios' ? 8 : 16) }]}
         pointerEvents="box-none"
       >
         {toasts.map((toast) => (
@@ -211,29 +168,19 @@ const styles = StyleSheet.create({
   toastItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 14,
-    borderLeftWidth: 4,
+    borderRadius: 14,
+    gap: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  iconCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  iconText: {
-    fontSize: 14,
-    fontWeight: '700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
   },
   message: {
     flex: 1,
-    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
