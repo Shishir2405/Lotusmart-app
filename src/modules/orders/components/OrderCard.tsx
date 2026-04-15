@@ -1,123 +1,164 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Card, Badge } from '../../../components/ui';
 import { formatCurrency, formatDate, getOrderStatusColor } from '../../../utils/helpers';
 import type { IOrder } from '../../../types';
+import { FONTS } from '../../../config/fonts';
+import { COLORS } from '../../../config/constants';
 
 interface OrderCardProps {
   order: IOrder;
   onPress: () => void;
+  index?: number;
 }
 
-function OrderCardInner({ order, onPress }: OrderCardProps) {
+const STATUS_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  placed: 'receipt-outline',
+  confirmed: 'checkmark-circle-outline',
+  processing: 'cog-outline',
+  shipped: 'car-outline',
+  delivered: 'checkmark-done-circle-outline',
+  cancelled: 'close-circle-outline',
+  returned: 'refresh-outline',
+};
+
+function OrderCardInner({ order, onPress, index = 0 }: OrderCardProps) {
   const { theme } = useTheme();
 
   const statusColor = getOrderStatusColor(order.orderStatus);
   const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-
-  const styles = getStyles(theme);
+  const statusLabel = order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1);
+  const statusIcon = STATUS_ICONS[order.orderStatus] || 'ellipse-outline';
 
   return (
-    <Card onPress={onPress} style={styles.card}>
-      <View style={styles.topRow}>
-        <View style={styles.orderInfo}>
-          <Text style={[styles.orderNumber, { color: theme.colors.text }]}>
-            #{order.orderNumber}
-          </Text>
-          <Text style={[styles.date, { color: theme.colors.textSecondary }]}>
-            {formatDate(order.createdAt)}
-          </Text>
+    <Animated.View entering={FadeInDown.delay(index * 80).duration(300)}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.85}
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            borderRadius: theme.borderRadius.md,
+          },
+        ]}
+      >
+        {/* Status strip */}
+        <View style={[styles.statusStrip, { backgroundColor: statusColor }]} />
+
+        {/* Header */}
+        <View style={styles.topRow}>
+          <View style={styles.orderInfo}>
+            <Text
+              style={[
+                styles.orderNumber,
+                { color: theme.colors.text, fontFamily: FONTS.body.bold },
+              ]}
+            >
+              #{order.orderNumber}
+            </Text>
+            <Text
+              style={[
+                styles.date,
+                { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
+              ]}
+            >
+              {formatDate(order.createdAt)}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: statusColor + '18' }]}>
+            <Ionicons name={statusIcon} size={14} color={statusColor} />
+            <Text
+              style={[styles.statusText, { color: statusColor, fontFamily: FONTS.body.semiBold }]}
+            >
+              {statusLabel}
+            </Text>
+          </View>
         </View>
-        <Badge
-          text={order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1)}
-          variant="outline"
-        />
-      </View>
 
-      <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
-      <View style={styles.bottomRow}>
-        <View style={styles.summaryInfo}>
-          <Text style={[styles.itemCount, { color: theme.colors.textSecondary }]}>
-            {itemCount} {itemCount === 1 ? 'item' : 'items'}
-          </Text>
-          <Text style={[styles.total, { color: theme.colors.text }]}>
-            {formatCurrency(order.total)}
-          </Text>
+        {/* Bottom */}
+        <View style={styles.bottomRow}>
+          <View>
+            <Text
+              style={[
+                styles.itemCount,
+                { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
+              ]}
+            >
+              {itemCount} {itemCount === 1 ? 'item' : 'items'}
+            </Text>
+            <Text
+              style={[styles.total, { color: theme.colors.text, fontFamily: FONTS.heading.bold }]}
+            >
+              {formatCurrency(order.total)}
+            </Text>
+          </View>
+          <View style={styles.viewBtn}>
+            <Text
+              style={[styles.viewText, { color: COLORS.rose, fontFamily: FONTS.body.semiBold }]}
+            >
+              View Details
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.rose} />
+          </View>
         </View>
-        <TouchableOpacity onPress={onPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={[styles.viewDetails, { color: theme.colors.primary }]}>
-            View Details
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.statusStrip, { backgroundColor: statusColor }]} />
-    </Card>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 export const OrderCard = React.memo(OrderCardInner);
 
-function getStyles(theme: ReturnType<typeof useTheme>['theme']) {
-  return StyleSheet.create({
-    card: {
-      marginHorizontal: theme.spacing.lg,
-      marginBottom: theme.spacing.md,
-      padding: theme.spacing.lg,
-      overflow: 'hidden',
-    },
-    topRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-    },
-    orderInfo: {
-      flex: 1,
-      marginRight: theme.spacing.sm,
-    },
-    orderNumber: {
-      fontSize: theme.fontSizes.base,
-      fontWeight: '700',
-      letterSpacing: 0.2,
-    },
-    date: {
-      fontSize: theme.fontSizes.xs,
-      marginTop: theme.spacing.xs,
-    },
-    divider: {
-      height: StyleSheet.hairlineWidth,
-      marginVertical: theme.spacing.md,
-    },
-    bottomRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    summaryInfo: {
-      flex: 1,
-    },
-    itemCount: {
-      fontSize: theme.fontSizes.sm,
-    },
-    total: {
-      fontSize: theme.fontSizes.lg,
-      fontWeight: '700',
-      marginTop: theme.spacing.xs,
-    },
-    viewDetails: {
-      fontSize: theme.fontSizes.sm,
-      fontWeight: '600',
-    },
-    statusStrip: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: 4,
-      height: '100%',
-      borderTopLeftRadius: theme.borderRadius.md,
-      borderBottomLeftRadius: theme.borderRadius.md,
-    },
-  });
-}
+const styles = StyleSheet.create({
+  card: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statusStrip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 4,
+    height: '100%',
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  orderInfo: { flex: 1, marginRight: 8 },
+  orderNumber: { fontSize: 15, letterSpacing: 0.2 },
+  date: { fontSize: 12, marginTop: 3 },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 4,
+  },
+  statusText: { fontSize: 12 },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 12 },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  itemCount: { fontSize: 13 },
+  total: { fontSize: 18, marginTop: 2 },
+  viewBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  viewText: { fontSize: 13 },
+});
