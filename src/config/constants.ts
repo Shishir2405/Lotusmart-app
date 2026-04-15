@@ -1,6 +1,4 @@
-export const API_BASE_URL = __DEV__
-  ? 'https://lotusmart-gamma.vercel.app/'
-  : 'https://lotusmart-gamma.vercel.app/api';
+export const API_BASE_URL = 'https://lotusmart.in/api';
 
 export const COLORS = {
   // Exact website colors

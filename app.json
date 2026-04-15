@@ -21,12 +21,11 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#FFFDF7"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "package": "com.lotusmart.app"
     },
     "web": {
       "favicon": "./assets/logo.png"
-    }
+    },
+    "plugins": ["expo-font", "expo-secure-store"]
   }
 }

@@ -5,7 +5,10 @@ import { API_BASE_URL } from '../config/constants';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'LotusApp',
+  },
 });
 
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {

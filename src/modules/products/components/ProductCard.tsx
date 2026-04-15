@@ -1,23 +1,23 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  FadeIn,
+} from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Card, Badge } from '../../../components/ui';
-import { Button } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
 import { useCartStore } from '../../../store/cart.store';
 import { useWishlistStore } from '../../../store/wishlist.store';
 import { formatCurrency, getDiscountPercentage, truncateText } from '../../../utils/helpers';
 import { IProduct } from '../../../types';
-import { ProductStackParamList } from '../types';
+import { FONTS } from '../../../config/fonts';
+import { COLORS } from '../../../config/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
@@ -25,33 +25,29 @@ const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 interface ProductCardProps {
   product: IProduct;
   horizontal?: boolean;
+  index?: number;
 }
 
 function RatingStars({ rating, size = 12 }: { rating: number; size?: number }) {
-  const { theme } = useTheme();
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     const filled = i <= Math.floor(rating);
-    const half = !filled && i - 0.5 <= rating;
     stars.push(
-      <Text
+      <Ionicons
         key={i}
-        style={{
-          fontSize: size,
-          color: filled || half ? '#F59E0B' : theme.colors.border,
-          marginRight: 1,
-        }}
-      >
-        {filled ? '\u2605' : half ? '\u2605' : '\u2606'}
-      </Text>,
+        name={filled ? 'star' : 'star-outline'}
+        size={size}
+        color={filled ? '#F59E0B' : '#D6D3D1'}
+        style={{ marginRight: 1 }}
+      />,
     );
   }
   return <View style={{ flexDirection: 'row', alignItems: 'center' }}>{stars}</View>;
 }
 
-function ProductCardInner({ product, horizontal = false }: ProductCardProps) {
+function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCardProps) {
   const { theme } = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<ProductStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<Record<string, object | undefined>>>();
   const { showToast } = useToast();
   const addItem = useCartStore((s) => s.addItem);
   const toggleWishlistItem = useWishlistStore((s) => s.toggleItem);
@@ -61,12 +57,42 @@ function ProductCardInner({ product, horizontal = false }: ProductCardProps) {
   const isOutOfStock = product.stock === 0;
   const cardWidth = horizontal ? 160 : CARD_WIDTH;
 
+  // Animations
+  const cardScale = useSharedValue(1);
+  const heartScale = useSharedValue(1);
+  const cartBtnScale = useSharedValue(1);
+
+  const cardAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardScale.value }],
+  }));
+
+  const heartAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
+
+  const cartBtnAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cartBtnScale.value }],
+  }));
+
   const handlePress = useCallback(() => {
     navigation.navigate('ProductDetail', { productId: product._id });
   }, [navigation, product._id]);
 
+  const handlePressIn = useCallback(() => {
+    cardScale.value = withSpring(0.96, { damping: 15, stiffness: 300 });
+  }, [cardScale]);
+
+  const handlePressOut = useCallback(() => {
+    cardScale.value = withSpring(1, { damping: 10, stiffness: 200 });
+  }, [cardScale]);
+
   const handleAddToCart = useCallback(() => {
     if (isOutOfStock) return;
+    cartBtnScale.value = withSequence(
+      withSpring(0.85, { damping: 15, stiffness: 400 }),
+      withSpring(1.05, { damping: 8, stiffness: 300 }),
+      withSpring(1, { damping: 12, stiffness: 200 }),
+    );
     addItem({
       productId: product._id,
       name: product.name,
@@ -79,9 +105,14 @@ function ProductCardInner({ product, horizontal = false }: ProductCardProps) {
       unit: product.unit,
     });
     showToast('success', `${truncateText(product.name, 20)} added to cart`);
-  }, [addItem, isOutOfStock, product, showToast]);
+  }, [addItem, isOutOfStock, product, showToast, cartBtnScale]);
 
   const handleToggleWishlist = useCallback(() => {
+    heartScale.value = withSequence(
+      withSpring(1.4, { damping: 6, stiffness: 400 }),
+      withSpring(0.8, { damping: 8, stiffness: 300 }),
+      withSpring(1, { damping: 10, stiffness: 200 }),
+    );
     const added = toggleWishlistItem({
       productId: product._id,
       name: product.name,
@@ -92,109 +123,139 @@ function ProductCardInner({ product, horizontal = false }: ProductCardProps) {
       unit: product.unit,
       isInStock: product.stock > 0,
     });
-    showToast(
-      'success',
-      added ? 'Added to wishlist' : 'Removed from wishlist',
-    );
-  }, [toggleWishlistItem, product, showToast]);
+    showToast('success', added ? 'Added to wishlist' : 'Removed from wishlist');
+  }, [toggleWishlistItem, product, showToast, heartScale]);
 
   return (
-    <Card
-      onPress={handlePress}
-      elevation={1}
-      style={[styles.card, { width: cardWidth }]}
+    <Animated.View
+      entering={FadeIn.delay(index * 80).duration(400)}
+      style={[cardAnimStyle, { width: cardWidth, marginBottom: 14 }]}
     >
-      {/* Image Section */}
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: product.images[0] }}
-          style={[
-            styles.image,
-            { borderTopLeftRadius: theme.borderRadius.md, borderTopRightRadius: theme.borderRadius.md },
-          ]}
-          resizeMode="cover"
-        />
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+            borderRadius: theme.borderRadius.md,
+          },
+        ]}
+      >
+        {/* Image */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: product.images[0] }}
+            style={[
+              styles.image,
+              {
+                borderTopLeftRadius: theme.borderRadius.md,
+                borderTopRightRadius: theme.borderRadius.md,
+              },
+            ]}
+            resizeMode="cover"
+          />
 
-        {/* Discount Badge */}
-        {discount > 0 && (
-          <View style={[styles.discountBadge, { backgroundColor: '#E8567F' }]}>
-            <Text style={styles.discountText}>{discount}% OFF</Text>
-          </View>
-        )}
+          {/* Discount badge */}
+          {discount > 0 && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>{discount}% OFF</Text>
+            </View>
+          )}
 
-        {/* Wishlist Heart */}
-        <TouchableOpacity
-          style={[
-            styles.wishlistButton,
-            {
-              backgroundColor: theme.colors.surface + 'E6',
-              borderRadius: theme.borderRadius.full,
-            },
-          ]}
-          onPress={handleToggleWishlist}
-          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-        >
-          <Text style={{ fontSize: 16, color: isInWishlist ? '#E8567F' : theme.colors.textSecondary }}>
-            {isInWishlist ? '\u2665' : '\u2661'}
-          </Text>
-        </TouchableOpacity>
+          {/* Wishlist */}
+          <TouchableOpacity
+            style={[styles.wishlistButton, { backgroundColor: theme.colors.surface + 'E6' }]}
+            onPress={handleToggleWishlist}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            activeOpacity={0.7}
+          >
+            <Animated.View style={heartAnimStyle}>
+              <Ionicons
+                name={isInWishlist ? 'heart' : 'heart-outline'}
+                size={18}
+                color={isInWishlist ? COLORS.rose : theme.colors.textSecondary}
+              />
+            </Animated.View>
+          </TouchableOpacity>
 
-        {/* Out of Stock Overlay */}
-        {isOutOfStock && (
-          <View style={styles.outOfStockOverlay}>
-            <Text style={styles.outOfStockText}>Out of Stock</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Content Section */}
-      <View style={[styles.content, { paddingHorizontal: theme.spacing.sm, paddingBottom: theme.spacing.sm }]}>
-        <Text
-          style={[styles.name, { color: theme.colors.text, fontSize: theme.fontSizes.sm }]}
-          numberOfLines={2}
-        >
-          {product.name}
-        </Text>
-
-        {/* Rating */}
-        {product.ratings.count > 0 && (
-          <View style={styles.ratingRow}>
-            <RatingStars rating={product.ratings.average} />
-            <Text style={[styles.ratingCount, { color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs }]}>
-              ({product.ratings.count})
-            </Text>
-          </View>
-        )}
-
-        {/* Price */}
-        <View style={styles.priceRow}>
-          <Text style={[styles.price, { color: theme.colors.text, fontSize: theme.fontSizes.base }]}>
-            {formatCurrency(product.price)}
-          </Text>
-          {product.compareAtPrice && product.compareAtPrice > product.price && (
-            <Text
-              style={[
-                styles.comparePrice,
-                { color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs },
-              ]}
-            >
-              {formatCurrency(product.compareAtPrice)}
-            </Text>
+          {/* Out of stock */}
+          {isOutOfStock && (
+            <View style={styles.outOfStockOverlay}>
+              <Text style={styles.outOfStockText}>Out of Stock</Text>
+            </View>
           )}
         </View>
 
-        {/* Add to Cart Button */}
-        <Button
-          size="sm"
-          variant={isOutOfStock ? 'outline' : 'primary'}
-          fullWidth
-          disabled={isOutOfStock}
-          onPress={handleAddToCart}
-        >
-          {isOutOfStock ? 'Unavailable' : 'Add to Cart'}
-        </Button>
-      </View>
-    </Card>
+        {/* Content */}
+        <View style={styles.content}>
+          <Text
+            style={[styles.name, { color: theme.colors.text, fontFamily: FONTS.body.semiBold }]}
+            numberOfLines={2}
+          >
+            {product.name}
+          </Text>
+
+          {product.ratings.count > 0 && (
+            <View style={styles.ratingRow}>
+              <RatingStars rating={product.ratings.average} />
+              <Text
+                style={[
+                  styles.ratingCount,
+                  { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
+                ]}
+              >
+                ({product.ratings.count})
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.priceRow}>
+            <Text style={[styles.price, { color: theme.colors.text, fontFamily: FONTS.body.bold }]}>
+              {formatCurrency(product.price)}
+            </Text>
+            {product.compareAtPrice && product.compareAtPrice > product.price && (
+              <Text
+                style={[
+                  styles.comparePrice,
+                  { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
+                ]}
+              >
+                {formatCurrency(product.compareAtPrice)}
+              </Text>
+            )}
+          </View>
+
+          {/* Add to Cart */}
+          <Animated.View style={cartBtnAnimStyle}>
+            <TouchableOpacity
+              style={[
+                styles.addToCartBtn,
+                {
+                  backgroundColor: isOutOfStock ? theme.colors.border : COLORS.rose,
+                  borderRadius: theme.borderRadius.sm,
+                },
+              ]}
+              onPress={handleAddToCart}
+              disabled={isOutOfStock}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={isOutOfStock ? 'close-circle-outline' : 'cart-outline'}
+                size={14}
+                color="#FFFFFF"
+              />
+              <Text style={styles.addToCartText}>
+                {isOutOfStock ? 'Unavailable' : 'Add to Cart'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
@@ -202,8 +263,13 @@ export const ProductCard = React.memo(ProductCardInner);
 
 const styles = StyleSheet.create({
   card: {
-    padding: 0,
-    marginBottom: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
   },
   imageContainer: {
     position: 'relative',
@@ -218,24 +284,31 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     left: 8,
+    backgroundColor: COLORS.rose,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   discountText: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: FONTS.body.bold,
     letterSpacing: 0.3,
   },
   wishlistButton: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   outOfStockOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -245,16 +318,16 @@ const styles = StyleSheet.create({
   },
   outOfStockText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontFamily: FONTS.body.bold,
     letterSpacing: 0.5,
   },
   content: {
-    paddingTop: 8,
+    padding: 10,
     gap: 4,
   },
   name: {
-    fontWeight: '600',
+    fontSize: 13,
     lineHeight: 18,
   },
   ratingRow: {
@@ -263,18 +336,32 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   ratingCount: {
+    fontSize: 11,
     marginLeft: 2,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   price: {
-    fontWeight: '700',
+    fontSize: 16,
   },
   comparePrice: {
+    fontSize: 12,
     textDecorationLine: 'line-through',
+  },
+  addToCartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 5,
+  },
+  addToCartText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: FONTS.body.semiBold,
   },
 });
