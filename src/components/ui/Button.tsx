@@ -1,16 +1,17 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   TouchableOpacity,
   Text,
   StyleSheet,
   ActivityIndicator,
-  Animated,
   ViewStyle,
   TextStyle,
   View,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useTheme } from '../../theme/ThemeContext';
 import type { Theme } from '../../theme';
+import { FONTS } from '../../config/fonts';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -29,9 +30,9 @@ interface ButtonProps {
 }
 
 const sizeMap: Record<ButtonSize, { px: number; py: number; fontSize: number; radius: number }> = {
-  sm: { px: 12, py: 6, fontSize: 13, radius: 8 },
-  md: { px: 20, py: 10, fontSize: 15, radius: 12 },
-  lg: { px: 24, py: 12, fontSize: 16, radius: 12 },
+  sm: { px: 14, py: 8, fontSize: 13, radius: 8 },
+  md: { px: 20, py: 11, fontSize: 15, radius: 12 },
+  lg: { px: 24, py: 14, fontSize: 16, radius: 12 },
   xl: { px: 32, py: 16, fontSize: 17, radius: 16 },
 };
 
@@ -42,13 +43,27 @@ function getVariantStyles(
   switch (variant) {
     case 'primary':
       return {
-        container: { backgroundColor: '#E8567F' },
+        container: {
+          backgroundColor: '#E8567F',
+          shadowColor: '#E8567F',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.25,
+          shadowRadius: 6,
+          elevation: 4,
+        },
         text: { color: '#FFFFFF' },
         loaderColor: '#FFFFFF',
       };
     case 'secondary':
       return {
-        container: { backgroundColor: '#7A6E42' },
+        container: {
+          backgroundColor: '#7A6E42',
+          shadowColor: '#7A6E42',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 3,
+        },
         text: { color: '#FFFFFF' },
         loaderColor: '#FFFFFF',
       };
@@ -90,40 +105,29 @@ export function Button({
   style,
 }: ButtonProps) {
   const { theme } = useTheme();
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useSharedValue(1);
 
   const sizeConfig = sizeMap[size];
   const variantStyles = getVariantStyles(variant, theme);
 
   const handlePressIn = useCallback(() => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.97,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
-    }).start();
+    scaleAnim.value = withSpring(0.96, { damping: 15, stiffness: 300 });
   }, [scaleAnim]);
 
   const handlePressOut = useCallback(() => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
-    }).start();
+    scaleAnim.value = withSpring(1, { damping: 10, stiffness: 200 });
   }, [scaleAnim]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleAnim.value }],
+  }));
 
   const isDisabled = disabled || isLoading;
 
   return (
-    <Animated.View
-      style={[
-        { transform: [{ scale: scaleAnim }] },
-        fullWidth && { width: '100%' },
-      ]}
-    >
+    <Animated.View style={[animStyle, fullWidth && { width: '100%' }]}>
       <TouchableOpacity
-        activeOpacity={0.8}
+        activeOpacity={0.85}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -149,7 +153,7 @@ export function Button({
             <Text
               style={[
                 styles.text,
-                { fontSize: sizeConfig.fontSize },
+                { fontSize: sizeConfig.fontSize, fontFamily: FONTS.body.semiBold },
                 variantStyles.text,
               ]}
             >
@@ -176,7 +180,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontWeight: '600',
     letterSpacing: 0.3,
   },
   iconLeft: {
