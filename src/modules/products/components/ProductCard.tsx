@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 180,
+    height: 158,
   },
   image: {
     width: '100%',
@@ -299,9 +299,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -323,12 +323,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   content: {
-    padding: 10,
-    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+    gap: 3,
   },
   name: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -336,7 +337,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   ratingCount: {
-    fontSize: 11,
+    fontSize: 10,
     marginLeft: 2,
   },
   priceRow: {
@@ -346,22 +347,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   price: {
-    fontSize: 16,
+    fontSize: 15,
   },
   comparePrice: {
-    fontSize: 12,
+    fontSize: 11,
     textDecorationLine: 'line-through',
   },
   addToCartBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 7,
     gap: 5,
   },
   addToCartText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: FONTS.body.semiBold,
   },
 });

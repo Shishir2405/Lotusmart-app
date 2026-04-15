@@ -263,12 +263,17 @@ export function ProductDetailScreen() {
 
   const discount = getDiscountPercentage(product.price, product.compareAtPrice);
   const isOutOfStock = product.stock === 0;
+  const selectedVariantPriceAdjustment = Object.values(selectedVariants).reduce(
+    (sum, opt) => sum + (opt.priceAdjustment || 0),
+    0,
+  );
+  const totalPrice = (product.price + selectedVariantPriceAdjustment) * quantity;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 70 }}
+        contentContainerStyle={{ paddingBottom: 120 + (insets.bottom > 0 ? insets.bottom : 8) }}
       >
         {/* ====== IMAGE CAROUSEL ====== */}
         <View style={styles.imageSection}>
@@ -712,7 +717,7 @@ export function ProductDetailScreen() {
             Total Price
           </Text>
           <Text style={{ fontSize: 20, color: theme.colors.text, fontFamily: FONTS.heading.bold }}>
-            {formatCurrency(product.price * quantity)}
+            {formatCurrency(totalPrice)}
           </Text>
         </View>
         <View style={styles.stickyActions}>
@@ -893,16 +898,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    paddingTop: 8,
+    paddingTop: 10,
+    gap: 12,
     borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 8,
   },
-  stickyPriceCol: { flex: 1 },
-  stickyActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  stickyPriceCol: { minWidth: 94 },
+  stickyActions: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   stickyCartBtn: {
     width: 42,
     height: 42,

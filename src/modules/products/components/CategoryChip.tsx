@@ -81,19 +81,20 @@ export function CategoryChip({ categories, selectedId, onSelect }: CategoryChipP
 const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
-  },
-  chip: {
-    borderWidth: 1.5,
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    height: 38,
-    justifyContent: 'center',
+    paddingVertical: 4,
     alignItems: 'center',
   },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
   chipText: {
-    fontSize: 13,
+    fontSize: 12,
     letterSpacing: 0.2,
   },
 });
