@@ -100,10 +100,17 @@ export function ProductListScreen() {
     return (
       <View style={styles.emptyContainer}>
         <Text style={{ fontSize: 48, marginBottom: 12 }}>{'\uD83D\uDD0D'}</Text>
-        <Text style={[styles.emptyTitle, { color: theme.colors.text, fontSize: theme.fontSizes.lg }]}>
+        <Text
+          style={[styles.emptyTitle, { color: theme.colors.text, fontSize: theme.fontSizes.lg }]}
+        >
           No products found
         </Text>
-        <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }]}>
+        <Text
+          style={[
+            styles.emptySubtitle,
+            { color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm },
+          ]}
+        >
           Try adjusting your filters or search terms
         </Text>
       </View>
@@ -134,7 +141,12 @@ export function ProductListScreen() {
 
       {/* Sort Bar */}
       <View style={[styles.sortBar, { paddingHorizontal: theme.spacing.lg }]}>
-        <Text style={[styles.resultCount, { color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }]}>
+        <Text
+          style={[
+            styles.resultCount,
+            { color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm },
+          ]}
+        >
           {pagination ? `${pagination.total} products` : ''}
         </Text>
         <TouchableOpacity
@@ -150,7 +162,12 @@ export function ProductListScreen() {
           onPress={() => setShowSortModal(true)}
         >
           <Text style={{ fontSize: 14, marginRight: 4 }}>{'\u2195'}</Text>
-          <Text style={[styles.sortButtonText, { color: theme.colors.text, fontSize: theme.fontSizes.sm }]}>
+          <Text
+            style={[
+              styles.sortButtonText,
+              { color: theme.colors.text, fontSize: theme.fontSizes.sm },
+            ]}
+          >
             {selectedSortLabel}
           </Text>
         </TouchableOpacity>
@@ -210,9 +227,7 @@ export function ProductListScreen() {
                     style={[
                       styles.sortOption,
                       {
-                        backgroundColor: isActive
-                          ? theme.colors.primary + '14'
-                          : 'transparent',
+                        backgroundColor: isActive ? theme.colors.primary + '14' : 'transparent',
                         borderRadius: theme.borderRadius.sm,
                       },
                     ]}
@@ -251,7 +266,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   resultCount: {
     fontWeight: '500',

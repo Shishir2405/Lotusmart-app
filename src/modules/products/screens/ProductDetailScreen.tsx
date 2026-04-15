@@ -268,7 +268,7 @@ export function ProductDetailScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 70 }}
       >
         {/* ====== IMAGE CAROUSEL ====== */}
         <View style={styles.imageSection}>
@@ -695,7 +695,7 @@ export function ProductDetailScreen() {
         style={[
           styles.stickyBar,
           {
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
             backgroundColor: theme.colors.surface,
             borderTopColor: theme.colors.border,
           },
@@ -892,36 +892,36 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 14,
+    paddingTop: 8,
     borderTopWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 8,
   },
   stickyPriceCol: { flex: 1 },
-  stickyActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  stickyActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stickyCartBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 10,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stickyBuyBtn: { flex: 2, borderRadius: 12, overflow: 'hidden' },
+  stickyBuyBtn: { flex: 2, borderRadius: 10, overflow: 'hidden' },
   stickyBuyGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    height: 42,
     gap: 6,
   },
   stickyBuyText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: FONTS.body.bold,
   },
 });

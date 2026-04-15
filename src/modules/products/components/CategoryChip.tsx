@@ -81,7 +81,7 @@ export function CategoryChip({ categories, selectedId, onSelect }: CategoryChipP
 const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   chip: {
     borderWidth: 1.5,
