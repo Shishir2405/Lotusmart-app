@@ -40,12 +40,18 @@ export default function RegisterScreen() {
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: { name: '', email: '', phone: '', password: '', confirmPassword: '' },
   });
 
   const onSubmit = (data: RegisterFormData) => {
     registerMutation.mutate(
-      { name: data.name, email: data.email, password: data.password },
+      {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+      },
       {
         onSuccess: () => {
           (navigation as NativeStackNavigationProp<Record<string, object | undefined>>).reset({
@@ -145,6 +151,26 @@ export default function RegisterScreen() {
                   error={errors.email?.message}
                   leftIcon={
                     <Ionicons name="mail-outline" size={18} color={theme.colors.textSecondary} />
+                  }
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="phone"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label="Phone Number"
+                  placeholder="Enter your phone number"
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.phone?.message}
+                  leftIcon={
+                    <Ionicons name="call-outline" size={18} color={theme.colors.textSecondary} />
                   }
                 />
               )}

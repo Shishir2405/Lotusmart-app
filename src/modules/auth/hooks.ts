@@ -73,16 +73,22 @@ export function useRegister() {
     mutationFn: ({
       name,
       email,
+      phone,
       password,
+      confirmPassword,
     }: {
       name: string;
       email: string;
+      phone: string;
       password: string;
-    }) => register(name, email, password),
+      confirmPassword: string;
+    }) => register(name, email, phone, password, confirmPassword),
     onSuccess: async (response) => {
       const { token, user } = response.data!;
-      await SecureStore.setItemAsync('auth_token', token);
-      setToken(token);
+      if (token) {
+        await SecureStore.setItemAsync('auth_token', token);
+        setToken(token);
+      }
       setUser(user);
     },
   });
@@ -147,8 +153,7 @@ export function useUpdateAddress() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<IAddress> }) =>
-      updateAddress(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<IAddress> }) => updateAddress(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authKeys.addresses });
     },

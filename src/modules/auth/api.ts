@@ -12,9 +12,17 @@ export const login = async (
 export const register = async (
   name: string,
   email: string,
+  phone: string,
   password: string,
-): Promise<IApiResponse<{ token: string; user: IUser }>> => {
-  const response = await api.post('/auth/register', { name, email, password });
+  confirmPassword: string,
+): Promise<IApiResponse<{ token?: string; user: IUser }>> => {
+  const response = await api.post('/auth/register', {
+    name,
+    email,
+    phone,
+    password,
+    confirmPassword,
+  });
   return response.data;
 };
 
@@ -23,9 +31,7 @@ export const getMe = async (): Promise<IApiResponse<IUser>> => {
   return response.data;
 };
 
-export const forgotPassword = async (
-  email: string,
-): Promise<IApiResponse<{ message: string }>> => {
+export const forgotPassword = async (email: string): Promise<IApiResponse<{ message: string }>> => {
   const response = await api.post('/auth/forgot-password', { email });
   return response.data;
 };
@@ -61,9 +67,7 @@ export const updateAddress = async (
   return response.data;
 };
 
-export const deleteAddress = async (
-  id: string,
-): Promise<IApiResponse<void>> => {
+export const deleteAddress = async (id: string): Promise<IApiResponse<void>> => {
   const response = await api.delete(`/auth/addresses/${id}`);
   return response.data;
 };
