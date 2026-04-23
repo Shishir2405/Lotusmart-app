@@ -22,6 +22,7 @@ import {
   useDeleteAddress,
 } from '../../auth/hooks';
 import { IAddress, AddressLabel } from '../../../types';
+import { useLoadingCap } from '../../../hooks/useLoadingCap';
 import { FONTS } from '../../../config/fonts';
 import { COLORS } from '../../../config/constants';
 
@@ -71,6 +72,7 @@ export default function AddressesScreen() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 
   const addresses: IAddress[] = addressesResponse?.data ?? [];
+  const showSkeleton = useLoadingCap(isLoading && addresses.length === 0);
 
   useEffect(() => {
     if (!modalVisible) return;
@@ -345,7 +347,7 @@ export default function AddressesScreen() {
         )}
       </View>
 
-      {isLoading ? (
+      {showSkeleton ? (
         renderSkeleton()
       ) : addresses.length === 0 ? (
         renderEmpty()

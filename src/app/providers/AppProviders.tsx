@@ -1,10 +1,6 @@
 import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  NavigationContainer,
-  DefaultTheme,
-  Theme as NavTheme,
-} from '@react-navigation/native';
+import { QueryClient, QueryClientProvider, keepPreviousData } from '@tanstack/react-query';
+import { NavigationContainer, DefaultTheme, Theme as NavTheme } from '@react-navigation/native';
 import { ThemeProvider } from '../../theme/ThemeContext';
 import { ToastProvider } from '../../components/ui/Toast';
 import { useFonts, fontMap } from '../../config/fonts';
@@ -13,8 +9,11 @@ import { SplashScreen } from '../../components/shared/SplashScreen';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
+      staleTime: 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       retry: 1,
+      placeholderData: keepPreviousData,
+      refetchOnWindowFocus: false,
     },
   },
 });

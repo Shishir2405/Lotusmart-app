@@ -1,17 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import { View, Text, FlatList, RefreshControl, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Skeleton, Button } from '../../../components/ui';
 import { OrderCard } from '../components/OrderCard';
 import { useOrders } from '../hooks';
+import { useLoadingCap } from '../../../hooks/useLoadingCap';
 import type { IOrder } from '../../../types';
 
 export default function OrdersScreen() {
@@ -23,6 +17,7 @@ export default function OrdersScreen() {
 
   const orders = (data?.data as IOrder[] | undefined) ?? [];
   const pagination = data?.pagination;
+  const showSkeleton = useLoadingCap(isLoading && orders.length === 0);
   const hasNextPage = pagination ? pagination.page < pagination.totalPages : false;
 
   const handleRefresh = useCallback(() => {
@@ -58,13 +53,19 @@ export default function OrdersScreen() {
 
   const styles = getStyles(theme);
 
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
         <View style={styles.skeletonContainer}>
           {[1, 2, 3, 4].map((i) => (
-            <View key={i} style={[styles.skeletonCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View
+              key={i}
+              style={[
+                styles.skeletonCard,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+              ]}
+            >
               <View style={styles.skeletonRow}>
                 <Skeleton width={140} height={18} />
                 <Skeleton width={80} height={24} borderRadius={12} />
@@ -87,14 +88,14 @@ export default function OrdersScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
         <View style={styles.emptyContainer}>
-          <View style={[styles.illustrationCircle, { backgroundColor: theme.colors.primary + '12' }]}>
+          <View
+            style={[styles.illustrationCircle, { backgroundColor: theme.colors.primary + '12' }]}
+          >
             <Text style={styles.illustrationIcon}>📦</Text>
           </View>
-          <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-            No orders yet
-          </Text>
+          <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No orders yet</Text>
           <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-            Looks like you haven't placed any orders. Start exploring our collection!
+            Looks like you haven&apos;t placed any orders. Start exploring our collection!
           </Text>
           <Button onPress={handleStartShopping} size="lg" style={{ marginTop: 24 }}>
             Start Shopping

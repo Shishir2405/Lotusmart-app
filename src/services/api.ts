@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config/constants';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 8000,
   headers: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'LotusApp',

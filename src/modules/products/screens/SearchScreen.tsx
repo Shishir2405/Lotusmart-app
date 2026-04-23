@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme/ThemeContext';
 import { useSearchProducts } from '../hooks';
+import { useLoadingCap } from '../../../hooks/useLoadingCap';
 import { formatCurrency } from '../../../utils/helpers';
 import { IProduct } from '../../../types';
 import { FONTS } from '../../../config/fonts';
@@ -30,6 +31,7 @@ export function SearchScreen() {
   const [query, setQuery] = useState('');
   const { data: searchRes, isLoading } = useSearchProducts(query);
   const results = searchRes?.data ?? [];
+  const showLoader = useLoadingCap(isLoading && results.length === 0);
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
@@ -99,8 +101,8 @@ export function SearchScreen() {
   const keyExtractor = useCallback((item: IProduct) => item._id, []);
 
   const hasQuery = query.trim().length > 0;
-  const showEmpty = hasQuery && !isLoading && results.length === 0;
-  const showInitial = !hasQuery && !isLoading;
+  const showEmpty = hasQuery && !showLoader && results.length === 0;
+  const showInitial = !hasQuery && !showLoader;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -161,7 +163,7 @@ export function SearchScreen() {
       </View>
 
       {/* Loading */}
-      {isLoading && (
+      {showLoader && (
         <View style={styles.centerState}>
           <ActivityIndicator size="large" color={COLORS.rose} />
           <Text
@@ -226,7 +228,7 @@ export function SearchScreen() {
       )}
 
       {/* Results */}
-      {!isLoading && results.length > 0 && (
+      {results.length > 0 && (
         <FlatList
           data={results}
           renderItem={renderItem}
