@@ -1,12 +1,6 @@
 export type UserRole = 'admin' | 'customer';
 
-export type ProductType =
-  | 'spice'
-  | 'dry_fruit'
-  | 'gifting'
-  | 'herb'
-  | 'honey'
-  | 'superfood';
+export type ProductType = 'spice' | 'dry_fruit' | 'gifting' | 'herb' | 'honey' | 'superfood';
 
 export type ProductUnit = 'kg' | 'g' | 'pieces' | 'pack' | 'ml' | 'L' | 'box';
 
@@ -23,6 +17,15 @@ export type OrderStatus =
   | 'cancelled'
   | 'returned';
 
+export type AddressLabel = 'home' | 'work' | 'other';
+
+export type AuthProvider = 'local' | 'google';
+
+export interface IGeoCoordinates {
+  lat: number;
+  lng: number;
+}
+
 export interface IAddress {
   _id?: string;
   fullName: string;
@@ -33,6 +36,9 @@ export interface IAddress {
   state: string;
   pincode: string;
   isDefault?: boolean;
+  label?: AddressLabel;
+  coordinates?: IGeoCoordinates;
+  formattedAddress?: string;
 }
 
 export interface IUser {
@@ -44,6 +50,8 @@ export interface IUser {
   avatar?: string;
   addresses: IAddress[];
   isVerified: boolean;
+  profileComplete: boolean;
+  authProvider?: AuthProvider;
   permissions?: string[];
   createdAt: string;
   updatedAt: string;

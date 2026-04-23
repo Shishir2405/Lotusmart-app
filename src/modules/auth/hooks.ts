@@ -3,12 +3,17 @@ import * as SecureStore from 'expo-secure-store';
 import {
   login,
   register,
+  googleAuth,
+  completeProfile,
+  verifyEmail,
   getMe,
   forgotPassword,
   getAddresses,
   createAddress,
   updateAddress,
   deleteAddress,
+  RegisterPayload,
+  CompleteProfilePayload,
 } from './api';
 import { mergeCart } from '../cart/api';
 import { mergeWishlist } from '../wishlist/api';
@@ -70,25 +75,56 @@ export function useRegister() {
   const { setUser, setToken } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({
-      name,
-      email,
-      phone,
-      password,
-      confirmPassword,
-    }: {
-      name: string;
-      email: string;
-      phone: string;
-      password: string;
-      confirmPassword: string;
-    }) => register(name, email, phone, password, confirmPassword),
+    mutationFn: (payload: RegisterPayload) => register(payload),
     onSuccess: async (response) => {
       const { token, user } = response.data!;
       if (token) {
         await SecureStore.setItemAsync('auth_token', token);
         setToken(token);
       }
+      setUser(user);
+    },
+  });
+}
+
+export function useGoogleAuth() {
+  const { setUser, setToken } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (idToken: string) => googleAuth(idToken),
+    onSuccess: async (response) => {
+      const { token, user } = response.data!;
+      if (token) {
+        await SecureStore.setItemAsync('auth_token', token);
+        setToken(token);
+      }
+      setUser(user);
+    },
+  });
+}
+
+export function useCompleteProfile() {
+  const { setUser } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CompleteProfilePayload) => completeProfile(payload),
+    onSuccess: (response) => {
+      const { user } = response.data!;
+      setUser(user);
+      queryClient.invalidateQueries({ queryKey: authKeys.me });
+      queryClient.invalidateQueries({ queryKey: authKeys.addresses });
+    },
+  });
+}
+
+export function useVerifyEmail() {
+  const { setUser } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (token: string) => verifyEmail(token),
+    onSuccess: (response) => {
+      const { user } = response.data!;
       setUser(user);
     },
   });
