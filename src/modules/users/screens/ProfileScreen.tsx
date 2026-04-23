@@ -92,11 +92,7 @@ export default function ProfileScreen() {
           label: 'My Wishlist',
           bgColor: '#FEF3C7',
           color: '#F59E0B',
-          onPress: () =>
-            (navigation as NativeStackNavigationProp<Record<string, object | undefined>>).navigate(
-              'Main',
-              { screen: 'HomeTab' },
-            ),
+          onPress: () => navigation.navigate('Wishlist'),
         },
         {
           icon: 'lock-closed-outline',
