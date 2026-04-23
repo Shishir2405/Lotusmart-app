@@ -13,6 +13,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { FONTS } from '../../../config/fonts';
 import { useFAQs } from '../hooks';
 import { FAQItem } from '../api';
+import { useLoadingCap } from '../../../hooks/useLoadingCap';
 
 const DEFAULT_FAQS: FAQItem[] = [
   {
@@ -116,6 +117,7 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function FAQScreen() {
   const { theme } = useTheme();
   const { data: faqRes, isLoading } = useFAQs();
+  const showLoader = useLoadingCap(isLoading && !faqRes);
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -134,9 +136,7 @@ export default function FAQScreen() {
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (f) =>
-          f.question.toLowerCase().includes(q) ||
-          f.answer.toLowerCase().includes(q),
+        (f) => f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q),
       );
     }
     return result.sort((a, b) => a.sortOrder - b.sortOrder);
@@ -145,7 +145,7 @@ export default function FAQScreen() {
   const getCategoryStyle = (cat: string) =>
     CATEGORY_COLORS[cat] ?? { color: '#E8567F', bg: '#FFF1F3' };
 
-  if (isLoading) {
+  if (showLoader) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
@@ -162,8 +162,7 @@ export default function FAQScreen() {
       <View style={[styles.header, { backgroundColor: theme.colors.primaryLight }]}>
         <Text style={[styles.headerTag, { color: theme.colors.accent }]}>Help Center</Text>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-          Frequently Asked{' '}
-          <Text style={{ color: theme.colors.primary }}>Questions</Text>
+          Frequently Asked <Text style={{ color: theme.colors.primary }}>Questions</Text>
         </Text>
         <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
           Everything you need to know about LotusMart
@@ -188,7 +187,13 @@ export default function FAQScreen() {
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Text style={{ color: theme.colors.primary, fontFamily: FONTS.body.semiBold, fontSize: 12 }}>
+              <Text
+                style={{
+                  color: theme.colors.primary,
+                  fontFamily: FONTS.body.semiBold,
+                  fontSize: 12,
+                }}
+              >
                 Clear
               </Text>
             </TouchableOpacity>
@@ -212,10 +217,10 @@ export default function FAQScreen() {
                   styles.categoryPill,
                   {
                     backgroundColor: isActive
-                      ? catStyle?.bg ?? theme.colors.primaryLight
+                      ? (catStyle?.bg ?? theme.colors.primaryLight)
                       : theme.colors.surface,
                     borderColor: isActive
-                      ? catStyle?.color ?? theme.colors.primary
+                      ? (catStyle?.color ?? theme.colors.primary)
                       : theme.colors.border,
                   },
                 ]}
@@ -229,7 +234,11 @@ export default function FAQScreen() {
                   <Ionicons
                     name={icon}
                     size={14}
-                    color={isActive ? catStyle?.color ?? theme.colors.primary : theme.colors.textSecondary}
+                    color={
+                      isActive
+                        ? (catStyle?.color ?? theme.colors.primary)
+                        : theme.colors.textSecondary
+                    }
                   />
                 )}
                 <Text
@@ -237,7 +246,7 @@ export default function FAQScreen() {
                     styles.categoryText,
                     {
                       color: isActive
-                        ? catStyle?.color ?? theme.colors.primary
+                        ? (catStyle?.color ?? theme.colors.primary)
                         : theme.colors.textSecondary,
                     },
                   ]}
@@ -245,7 +254,12 @@ export default function FAQScreen() {
                   {cat}
                 </Text>
                 {isActive && (
-                  <View style={[styles.categoryCount, { backgroundColor: catStyle?.color ?? theme.colors.primary }]}>
+                  <View
+                    style={[
+                      styles.categoryCount,
+                      { backgroundColor: catStyle?.color ?? theme.colors.primary },
+                    ]}
+                  >
                     <Text style={styles.categoryCountText}>{filteredFAQs.length}</Text>
                   </View>
                 )}
@@ -264,7 +278,12 @@ export default function FAQScreen() {
             </Text>
           </View>
         ) : (
-          <View style={[styles.faqList, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View
+            style={[
+              styles.faqList,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            ]}
+          >
             {filteredFAQs.map((faq, index) => {
               const isOpen = expandedId === faq.id;
               const catStyle = getCategoryStyle(faq.category);
@@ -327,7 +346,8 @@ export default function FAQScreen() {
             Still have questions?
           </Text>
           <Text style={[styles.contactSubtitle, { color: theme.colors.textSecondary }]}>
-            Our support team is available Monday to Saturday, 9 AM to 7 PM. We are always happy to help.
+            Our support team is available Monday to Saturday, 9 AM to 7 PM. We are always happy to
+            help.
           </Text>
         </View>
 

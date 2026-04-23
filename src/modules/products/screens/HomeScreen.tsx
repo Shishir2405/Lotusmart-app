@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Skeleton } from '../../../components/ui';
 import { useCategories, useFeaturedProducts, useProducts } from '../hooks';
+import { useLoadingCap } from '../../../hooks/useLoadingCap';
 import { useFAQs } from '../../site-config/hooks';
 import type { FAQItem } from '../../site-config/api';
 import { ProductCard } from '../components/ProductCard';
@@ -108,7 +109,8 @@ function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
             <View style={heroStyles.content}>
               <Text style={[heroStyles.tag, { color: item.accentColor }]}>{item.tag}</Text>
               <Text style={heroStyles.title}>
-                {item.title}{'\n'}
+                {item.title}
+                {'\n'}
                 <Text style={[heroStyles.titleHighlight, { color: item.accentColor }]}>
                   {item.titleHighlight}
                 </Text>
@@ -130,7 +132,11 @@ function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
                   <Text style={heroStyles.trustText}>100% Natural</Text>
                 </View>
                 <View style={heroStyles.trustBadge}>
-                  <Ionicons name="shield-checkmark-outline" size={12} color="rgba(255,255,255,0.7)" />
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={12}
+                    color="rgba(255,255,255,0.7)"
+                  />
                   <Text style={heroStyles.trustText}>FSSAI Certified</Text>
                 </View>
                 <View style={heroStyles.trustBadge}>
@@ -303,7 +309,12 @@ function CategoryItem({ category, onPress }: { category: ICategory; onPress: () 
   const { theme } = useTheme();
   return (
     <TouchableOpacity style={catStyles.item} onPress={onPress} activeOpacity={0.7}>
-      <View style={[catStyles.imageContainer, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
+      <View
+        style={[
+          catStyles.imageContainer,
+          { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border },
+        ]}
+      >
         {category.image ? (
           <Image source={{ uri: category.image }} style={catStyles.image} resizeMode="cover" />
         ) : (
@@ -357,7 +368,12 @@ function BannerStrip() {
   ];
 
   return (
-    <View style={[bannerStyles.container, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+    <View
+      style={[
+        bannerStyles.container,
+        { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+      ]}
+    >
       {items.map((item, i) => (
         <View key={i} style={bannerStyles.item}>
           <View style={[bannerStyles.iconCircle, { backgroundColor: theme.colors.primaryLight }]}>
@@ -411,12 +427,42 @@ function WhyChooseUsSection() {
   const { theme } = useTheme();
 
   const features = [
-    { icon: 'leaf' as const, title: 'Farm Fresh', desc: 'Sourced directly from organic farms', color: '#16A34A' },
-    { icon: 'shield-checkmark' as const, title: 'FSSAI Licensed', desc: 'Certified safe & hygienic', color: '#E8567F' },
-    { icon: 'star' as const, title: '4.9\u2605 Rated', desc: '50K+ happy customers', color: '#D97706' },
-    { icon: 'cube' as const, title: 'Premium Packaging', desc: 'Freshness sealed guaranteed', color: '#7C3AED' },
-    { icon: 'refresh' as const, title: 'Easy Returns', desc: 'Hassle-free return policy', color: '#0891B2' },
-    { icon: 'flash' as const, title: 'Fast Delivery', desc: 'Pan-India express shipping', color: '#B59F6B' },
+    {
+      icon: 'leaf' as const,
+      title: 'Farm Fresh',
+      desc: 'Sourced directly from organic farms',
+      color: '#16A34A',
+    },
+    {
+      icon: 'shield-checkmark' as const,
+      title: 'FSSAI Licensed',
+      desc: 'Certified safe & hygienic',
+      color: '#E8567F',
+    },
+    {
+      icon: 'star' as const,
+      title: '4.9\u2605 Rated',
+      desc: '50K+ happy customers',
+      color: '#D97706',
+    },
+    {
+      icon: 'cube' as const,
+      title: 'Premium Packaging',
+      desc: 'Freshness sealed guaranteed',
+      color: '#7C3AED',
+    },
+    {
+      icon: 'refresh' as const,
+      title: 'Easy Returns',
+      desc: 'Hassle-free return policy',
+      color: '#0891B2',
+    },
+    {
+      icon: 'flash' as const,
+      title: 'Fast Delivery',
+      desc: 'Pan-India express shipping',
+      color: '#B59F6B',
+    },
   ];
 
   return (
@@ -427,7 +473,12 @@ function WhyChooseUsSection() {
       </Text>
 
       {/* Stats strip */}
-      <View style={[whyStyles.statsRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <View
+        style={[
+          whyStyles.statsRow,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+        ]}
+      >
         {[
           { value: '50K+', label: 'Orders' },
           { value: '4.9\u2605', label: 'Rating' },
@@ -436,7 +487,9 @@ function WhyChooseUsSection() {
         ].map((stat, i) => (
           <View key={i} style={whyStyles.statItem}>
             <Text style={[whyStyles.statValue, { color: theme.colors.primary }]}>{stat.value}</Text>
-            <Text style={[whyStyles.statLabel, { color: theme.colors.textSecondary }]}>{stat.label}</Text>
+            <Text style={[whyStyles.statLabel, { color: theme.colors.textSecondary }]}>
+              {stat.label}
+            </Text>
           </View>
         ))}
       </View>
@@ -444,12 +497,20 @@ function WhyChooseUsSection() {
       {/* Feature grid */}
       <View style={whyStyles.featureGrid}>
         {features.map((f, i) => (
-          <View key={i} style={[whyStyles.featureItem, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View
+            key={i}
+            style={[
+              whyStyles.featureItem,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            ]}
+          >
             <View style={[whyStyles.featureIcon, { backgroundColor: f.color + '15' }]}>
               <Ionicons name={f.icon} size={20} color={f.color} />
             </View>
             <Text style={[whyStyles.featureTitle, { color: theme.colors.text }]}>{f.title}</Text>
-            <Text style={[whyStyles.featureDesc, { color: theme.colors.textSecondary }]}>{f.desc}</Text>
+            <Text style={[whyStyles.featureDesc, { color: theme.colors.textSecondary }]}>
+              {f.desc}
+            </Text>
           </View>
         ))}
       </View>
@@ -531,35 +592,40 @@ const STATIC_FAQ_DATA: FAQItem[] = [
   {
     id: '1',
     question: 'Are your products 100% natural and chemical-free?',
-    answer: 'Yes! All our spices and dry fruits are sourced directly from farms and are 100% natural, without any artificial colours, flavours, or preservatives.',
+    answer:
+      'Yes! All our spices and dry fruits are sourced directly from farms and are 100% natural, without any artificial colours, flavours, or preservatives.',
     category: 'Products',
     sortOrder: 1,
   },
   {
     id: '2',
     question: 'Do you offer free shipping?',
-    answer: 'Yes, we offer free shipping on all orders above \u20B9499. For orders below \u20B9499, a nominal shipping fee of \u20B949-60 applies.',
+    answer:
+      'Yes, we offer free shipping on all orders above \u20B9499. For orders below \u20B9499, a nominal shipping fee of \u20B949-60 applies.',
     category: 'Shipping',
     sortOrder: 2,
   },
   {
     id: '3',
     question: 'What is your return policy?',
-    answer: 'We offer hassle-free returns within 7 days of delivery. If you receive damaged or wrong products, we will arrange a full refund or replacement.',
+    answer:
+      'We offer hassle-free returns within 7 days of delivery. If you receive damaged or wrong products, we will arrange a full refund or replacement.',
     category: 'Returns',
     sortOrder: 3,
   },
   {
     id: '4',
     question: 'How are the products packaged?',
-    answer: 'All products are packed in premium food-grade, airtight packaging to ensure maximum freshness and shelf life.',
+    answer:
+      'All products are packed in premium food-grade, airtight packaging to ensure maximum freshness and shelf life.',
     category: 'Products',
     sortOrder: 4,
   },
   {
     id: '5',
     question: 'Do you deliver across India?',
-    answer: 'Yes, we deliver pan-India. Most orders are delivered within 3-7 business days depending on your location.',
+    answer:
+      'Yes, we deliver pan-India. Most orders are delivered within 3-7 business days depending on your location.',
     category: 'Shipping',
     sortOrder: 5,
   },
@@ -577,13 +643,16 @@ function FAQSection({ faqs, onViewAll }: { faqs: FAQItem[]; onViewAll: () => voi
         Frequently Asked Questions
       </Text>
       <Text style={[faqStyles.subheading, { color: theme.colors.textSecondary }]}>
-        Got questions? We've got answers
+        Got questions? We&apos;ve got answers
       </Text>
 
       {displayFaqs.map((faq, i) => (
         <TouchableOpacity
           key={faq.id}
-          style={[faqStyles.item, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+          style={[
+            faqStyles.item,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+          ]}
           onPress={() => setExpanded(expanded === i ? null : i)}
           activeOpacity={0.7}
         >
@@ -597,7 +666,9 @@ function FAQSection({ faqs, onViewAll }: { faqs: FAQItem[]; onViewAll: () => voi
           </View>
           {expanded === i && (
             <View style={[faqStyles.answerContainer, { borderTopColor: theme.colors.border }]}>
-              <Text style={[faqStyles.answer, { color: theme.colors.textSecondary }]}>{faq.answer}</Text>
+              <Text style={[faqStyles.answer, { color: theme.colors.textSecondary }]}>
+                {faq.answer}
+              </Text>
             </View>
           )}
         </TouchableOpacity>
@@ -684,10 +755,7 @@ function NewsletterSection() {
   };
 
   return (
-    <LinearGradient
-      colors={['#5C6B3C', '#3E4A28']}
-      style={nlStyles.container}
-    >
+    <LinearGradient colors={['#5C6B3C', '#3E4A28']} style={nlStyles.container}>
       <Text style={nlStyles.heading}>Stay Updated</Text>
       <Text style={nlStyles.subtext}>
         Subscribe to get exclusive offers, new product launches & seasonal deals.
@@ -793,9 +861,21 @@ export function HomeScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NavProp>();
 
-  const { data: categoriesRes, isLoading: loadingCategories, refetch: refetchCategories } = useCategories();
-  const { data: featuredRes, isLoading: loadingFeatured, refetch: refetchFeatured } = useFeaturedProducts();
-  const { data: allProductsRes, isLoading: loadingAll, refetch: refetchAll } = useProducts({ page: 1, limit: 6 });
+  const {
+    data: categoriesRes,
+    isLoading: loadingCategories,
+    refetch: refetchCategories,
+  } = useCategories();
+  const {
+    data: featuredRes,
+    isLoading: loadingFeatured,
+    refetch: refetchFeatured,
+  } = useFeaturedProducts();
+  const {
+    data: allProductsRes,
+    isLoading: loadingAll,
+    refetch: refetchAll,
+  } = useProducts({ page: 1, limit: 6 });
   const { data: faqRes, refetch: refetchFAQs } = useFAQs();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -803,6 +883,9 @@ export function HomeScreen() {
   const categories = categoriesRes?.data ?? [];
   const featuredProducts = featuredRes?.data ?? [];
   const allProducts = allProductsRes?.data ?? [];
+  const showCategoriesSkeleton = useLoadingCap(loadingCategories && categories.length === 0);
+  const showFeaturedSkeleton = useLoadingCap(loadingFeatured && featuredProducts.length === 0);
+  const showAllSkeleton = useLoadingCap(loadingAll && allProducts.length === 0);
   const dynamicFAQs: FAQItem[] = faqRes?.data?.value?.items ?? [];
 
   const onRefresh = useCallback(async () => {
@@ -847,7 +930,9 @@ export function HomeScreen() {
         }
       >
         {/* Hero Banner Carousel */}
-        <HeroBanner onShopPress={() => navigation.navigate('ProductList', { title: 'All Products' })} />
+        <HeroBanner
+          onShopPress={() => navigation.navigate('ProductList', { title: 'All Products' })}
+        />
 
         {/* Banner Strip - Shipping, Authentic, etc */}
         <View style={{ marginTop: 20 }}>
@@ -861,7 +946,7 @@ export function HomeScreen() {
             subtitle="Browse our premium collections"
             onViewAll={() => navigation.navigate('ProductList', { title: 'All Categories' })}
           />
-          {loadingCategories ? (
+          {showCategoriesSkeleton ? (
             <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 12 }}>
               {Array.from({ length: 5 }).map((_, i) => (
                 <View key={i} style={{ alignItems: 'center', width: 80 }}>
@@ -890,7 +975,7 @@ export function HomeScreen() {
             subtitle="Handpicked for you"
             onViewAll={() => navigation.navigate('ProductList', { title: 'Featured Products' })}
           />
-          {loadingFeatured ? (
+          {showFeaturedSkeleton ? (
             <View style={{ paddingHorizontal: 16 }}>
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -921,7 +1006,7 @@ export function HomeScreen() {
             subtitle="Explore our complete range"
             onViewAll={() => navigation.navigate('ProductList', { title: 'All Products' })}
           />
-          {loadingAll ? (
+          {showAllSkeleton ? (
             <ProductListSkeleton count={4} />
           ) : (
             <View style={styles.productGrid}>
@@ -950,32 +1035,66 @@ export function HomeScreen() {
         </View>
 
         {/* Footer Links */}
-        <View style={[footerStyles.container, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+        <View
+          style={[
+            footerStyles.container,
+            { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border },
+          ]}
+        >
           <Text style={[footerStyles.heading, { color: theme.colors.text }]}>LotusMart</Text>
           <Text style={[footerStyles.tagline, { color: theme.colors.textSecondary }]}>
             Premium Spices, Dry Fruits & Gifting
           </Text>
 
           <View style={footerStyles.linksRow}>
-            <TouchableOpacity onPress={() => navigation.navigate('FAQ' as any)} style={footerStyles.linkItem}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('FAQ' as any)}
+              style={footerStyles.linkItem}
+            >
               <Ionicons name="help-circle-outline" size={16} color={theme.colors.textSecondary} />
-              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>FAQs</Text>
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>
+                FAQs
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'terms' })} style={footerStyles.linkItem}>
+            <TouchableOpacity
+              onPress={() => (navigation as any).navigate('Policy', { type: 'terms' })}
+              style={footerStyles.linkItem}
+            >
               <Ionicons name="document-text-outline" size={16} color={theme.colors.textSecondary} />
-              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Terms & Conditions</Text>
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>
+                Terms & Conditions
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'privacy-policy' })} style={footerStyles.linkItem}>
-              <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.textSecondary} />
-              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Privacy Policy</Text>
+            <TouchableOpacity
+              onPress={() => (navigation as any).navigate('Policy', { type: 'privacy-policy' })}
+              style={footerStyles.linkItem}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={16}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>
+                Privacy Policy
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'refund-policy' })} style={footerStyles.linkItem}>
+            <TouchableOpacity
+              onPress={() => (navigation as any).navigate('Policy', { type: 'refund-policy' })}
+              style={footerStyles.linkItem}
+            >
               <Ionicons name="refresh-outline" size={16} color={theme.colors.textSecondary} />
-              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Refund Policy</Text>
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>
+                Refund Policy
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => (navigation as any).navigate('Policy', { type: 'shipping-policy' })} style={footerStyles.linkItem}>
+            <TouchableOpacity
+              onPress={() => (navigation as any).navigate('Policy', { type: 'shipping-policy' })}
+              style={footerStyles.linkItem}
+            >
               <Ionicons name="car-outline" size={16} color={theme.colors.textSecondary} />
-              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>Shipping Policy</Text>
+              <Text style={[footerStyles.linkText, { color: theme.colors.textSecondary }]}>
+                Shipping Policy
+              </Text>
             </TouchableOpacity>
           </View>
 

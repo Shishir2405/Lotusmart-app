@@ -17,6 +17,7 @@ import { CategoryChip } from '../components/CategoryChip';
 import { ProductListSkeleton } from '../components/ProductListSkeleton';
 import { IProduct } from '../../../types';
 import { ProductStackParamList } from '../types';
+import { useLoadingCap } from '../../../hooks/useLoadingCap';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
@@ -54,6 +55,7 @@ export function ProductListScreen() {
 
   const { data: productsRes, isLoading, refetch, isFetching } = useProducts(filters);
   const { data: categoriesRes } = useCategories();
+  const showSkeleton = useLoadingCap(isLoading && !productsRes);
 
   const products = productsRes?.data ?? [];
   const categories = categoriesRes?.data ?? [];
@@ -174,7 +176,7 @@ export function ProductListScreen() {
       </View>
 
       {/* Product Grid */}
-      {isLoading && page === 1 ? (
+      {showSkeleton && page === 1 ? (
         <ProductListSkeleton count={6} />
       ) : (
         <FlatList

@@ -26,6 +26,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Badge, Skeleton } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
 import { useProduct } from '../hooks';
+import { useLoadingCap } from '../../../hooks/useLoadingCap';
 import { useCartStore } from '../../../store/cart.store';
 import { useWishlistStore } from '../../../store/wishlist.store';
 import { formatCurrency, getDiscountPercentage } from '../../../utils/helpers';
@@ -106,6 +107,7 @@ export function ProductDetailScreen() {
 
   const { data: productRes, isLoading } = useProduct(productId);
   const product = productRes?.data;
+  const showSkeleton = useLoadingCap(isLoading && !product);
 
   const addCartItem = useCartStore((s) => s.addItem);
   const toggleWishlistItem = useWishlistStore((s) => s.toggleItem);
@@ -241,22 +243,26 @@ export function ProductDetailScreen() {
   }, [product]);
 
   // ====== LOADING STATE ======
-  if (isLoading || !product) {
+  if (!product) {
     return (
       <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Skeleton width={SCREEN_WIDTH} height={SCREEN_WIDTH * 0.85} borderRadius={0} />
-        <View style={{ padding: 16, gap: 12 }}>
-          <Skeleton width="80%" height={24} />
-          <Skeleton width="50%" height={16} />
-          <Skeleton width="40%" height={28} />
-          <Skeleton
-            width="100%"
-            height={48}
-            borderRadius={theme.borderRadius.md}
-            style={{ marginTop: 12 }}
-          />
-          <Skeleton width="100%" height={48} borderRadius={theme.borderRadius.md} />
-        </View>
+        {showSkeleton ? (
+          <>
+            <Skeleton width={SCREEN_WIDTH} height={SCREEN_WIDTH * 0.85} borderRadius={0} />
+            <View style={{ padding: 16, gap: 12 }}>
+              <Skeleton width="80%" height={24} />
+              <Skeleton width="50%" height={16} />
+              <Skeleton width="40%" height={28} />
+              <Skeleton
+                width="100%"
+                height={48}
+                borderRadius={theme.borderRadius.md}
+                style={{ marginTop: 12 }}
+              />
+              <Skeleton width="100%" height={48} borderRadius={theme.borderRadius.md} />
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     );
   }
