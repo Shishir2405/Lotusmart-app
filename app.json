@@ -3,6 +3,7 @@
     "name": "LotusMart",
     "slug": "LotusmartApp",
     "version": "1.0.0",
+    "scheme": "lotusmart",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "automatic",
@@ -14,18 +15,39 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lotusmart.app"
+      "bundleIdentifier": "com.lotusmart.app",
+      "config": {
+        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "LotusMart uses your location to auto-fill your delivery address so you can check out faster."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#FFFDF7"
       },
-      "package": "com.lotusmart.app"
+      "package": "com.lotusmart.app",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "config": {
+        "googleMaps": {
+          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/logo.png"
     },
-    "plugins": ["expo-font", "expo-secure-store"]
+    "plugins": [
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "LotusMart uses your location to auto-fill your delivery address so you can check out faster."
+        }
+      ]
+    ]
   }
 }
