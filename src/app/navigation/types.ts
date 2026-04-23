@@ -20,6 +20,8 @@ export type RootStackParamList = {
   EditProfile: undefined;
   FAQ: undefined;
   Contact: undefined;
+  BlogList: undefined;
+  BlogDetail: { slug: string; title?: string };
   Policy: { type: 'terms' | 'privacy-policy' | 'refund-policy' | 'shipping-policy' };
 };
 

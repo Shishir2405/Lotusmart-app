@@ -123,6 +123,16 @@ export default function ProfileScreen() {
         ),
     },
     {
+      icon: 'book-outline',
+      label: 'Blog',
+      bgColor: '#FFF1F3',
+      color: COLORS.rose,
+      onPress: () =>
+        (navigation as NativeStackNavigationProp<Record<string, object | undefined>>).navigate(
+          'BlogList',
+        ),
+    },
+    {
       icon: 'mail-outline',
       label: 'Contact Us',
       bgColor: COLORS.roseLight,
