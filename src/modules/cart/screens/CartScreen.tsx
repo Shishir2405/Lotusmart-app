@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -8,43 +8,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Button } from '../../../components/ui';
-import { useToast } from '../../../components/ui/Toast';
 import { useCartStore } from '../../../store/cart.store';
 import { formatCurrency, getShippingCost } from '../../../utils/helpers';
 import { FREE_SHIPPING_THRESHOLD, COLORS } from '../../../config/constants';
 import { CartItem } from '../components/CartItem';
+import { CouponSection } from '../components/CouponSection';
 import { ICartItem } from '../../../types';
 import { FONTS } from '../../../config/fonts';
 
 export default function CartScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<Record<string, object | undefined>>>();
-  const { showToast } = useToast();
-  const { items, couponCode, discount, getSubtotal, getTotal, applyCoupon, removeCoupon } =
-    useCartStore();
-
-  const [couponInput, setCouponInput] = useState('');
+  const { items, discount, getSubtotal, getTotal } = useCartStore();
 
   const subtotal = getSubtotal();
   const shippingCost = getShippingCost(subtotal);
   const total = getTotal() + shippingCost;
   const freeShippingProgress = Math.min(subtotal / FREE_SHIPPING_THRESHOLD, 1);
-
-  const handleApplyCoupon = useCallback(() => {
-    const code = couponInput.trim().toUpperCase();
-    if (!code) {
-      showToast('error', 'Please enter a coupon code');
-      return;
-    }
-    applyCoupon(code, 50);
-    showToast('success', `Coupon "${code}" applied!`);
-    setCouponInput('');
-  }, [couponInput, applyCoupon, showToast]);
-
-  const handleRemoveCoupon = useCallback(() => {
-    removeCoupon();
-    showToast('info', 'Coupon removed');
-  }, [removeCoupon, showToast]);
 
   const handleCheckout = useCallback(() => {
     navigation.navigate('Checkout');
@@ -148,63 +128,8 @@ export default function CartScreen() {
       )}
 
       {/* Coupon Section */}
-      <Animated.View
-        entering={FadeInDown.delay(200).duration(300)}
-        style={[
-          styles.couponContainer,
-          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-        ]}
-      >
-        {couponCode ? (
-          <View style={styles.couponApplied}>
-            <View style={styles.couponAppliedLeft}>
-              <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} />
-              <View style={{ marginLeft: 8 }}>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: theme.colors.success,
-                    fontFamily: FONTS.body.semiBold,
-                  }}
-                >
-                  Coupon Applied
-                </Text>
-                <Text
-                  style={{ fontSize: 12, color: theme.colors.text, fontFamily: FONTS.body.regular }}
-                >
-                  {couponCode} (-{formatCurrency(discount)})
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity onPress={handleRemoveCoupon} activeOpacity={0.7}>
-              <Ionicons name="close-circle" size={22} color={theme.colors.error} />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.couponInputRow}>
-            <Ionicons name="pricetag-outline" size={18} color={theme.colors.textSecondary} />
-            <TextInput
-              style={[
-                styles.couponInput,
-                { color: theme.colors.text, fontFamily: FONTS.body.regular },
-              ]}
-              placeholder="Enter coupon code"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={couponInput}
-              onChangeText={setCouponInput}
-              autoCapitalize="characters"
-            />
-            <TouchableOpacity
-              style={[styles.applyBtn, { backgroundColor: COLORS.rose + '14' }]}
-              onPress={handleApplyCoupon}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontSize: 13, color: COLORS.rose, fontFamily: FONTS.body.bold }}>
-                Apply
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      <Animated.View entering={FadeInDown.delay(200).duration(300)} style={{ marginBottom: 14 }}>
+        <CouponSection orderTotal={subtotal} />
       </Animated.View>
 
       {/* Order Summary */}
