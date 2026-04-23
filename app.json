@@ -47,7 +47,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "LotusMart uses your location to auto-fill your delivery address so you can check out faster."
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

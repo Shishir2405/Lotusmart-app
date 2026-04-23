@@ -17,7 +17,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Button, Input } from '../../../components/ui';
+import { Button, Input, GoogleSignInButton } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
 import { loginSchema, LoginFormData } from '../../../utils/validators';
 import { useLogin } from '../hooks';
@@ -43,14 +43,16 @@ export default function LoginScreen() {
     defaultValues: { email: '', password: '' },
   });
 
+  const goToMain = () => {
+    (navigation as NativeStackNavigationProp<Record<string, object | undefined>>).reset({
+      index: 0,
+      routes: [{ name: 'Main' }],
+    });
+  };
+
   const onSubmit = (data: LoginFormData) => {
     loginMutation.mutate(data, {
-      onSuccess: () => {
-        (navigation as NativeStackNavigationProp<Record<string, object | undefined>>).reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        });
-      },
+      onSuccess: goToMain,
       onError: (error: Error & { response?: { data?: { message?: string } } }) => {
         const message =
           error?.response?.data?.message || error?.message || 'Login failed. Please try again.';
@@ -108,6 +110,26 @@ export default function LoginScreen() {
             >
               Sign in to your account to continue
             </Text>
+          </Animated.View>
+
+          {/* Google Sign-In */}
+          <Animated.View
+            entering={FadeInDown.delay(300).duration(400)}
+            style={styles.googleSection}
+          >
+            <GoogleSignInButton label="Continue with Google" onSignedIn={goToMain} />
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              <Text
+                style={[
+                  styles.dividerText,
+                  { color: theme.colors.textSecondary, fontFamily: FONTS.body.medium },
+                ]}
+              >
+                or sign in with email
+              </Text>
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+            </View>
           </Animated.View>
 
           {/* Form */}
@@ -263,6 +285,10 @@ const styles = StyleSheet.create({
   tagline: { fontSize: 14, marginTop: 4, letterSpacing: 0.5 },
   heading: { fontSize: 26, marginBottom: 4 },
   subheading: { fontSize: 15, marginBottom: 28 },
+  googleSection: { marginBottom: 18 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   formSection: { gap: 0 },
   forgotRow: { alignSelf: 'flex-end', marginBottom: 24, marginTop: -8 },
   forgotText: { fontSize: 14 },
