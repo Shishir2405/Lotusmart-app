@@ -73,3 +73,5 @@ export const ORDER_STATUSES = [
 export const PAYMENT_METHODS = ['cod', 'razorpay'] as const;
 
 export const RAZORPAY_KEY = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? '';
+
+export const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
