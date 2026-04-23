@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -212,14 +212,18 @@ export default function ProfileScreen() {
         {/* User Info or Auth Prompt */}
         {user ? (
           <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.userSection}>
-            <LinearGradient
-              colors={[COLORS.rose, COLORS.roseDark]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.avatarGradient}
-            >
-              <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
-            </LinearGradient>
+            {user.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarGradient} />
+            ) : (
+              <LinearGradient
+                colors={[COLORS.rose, COLORS.roseDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.avatarGradient}
+              >
+                <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
+              </LinearGradient>
+            )}
             <Text
               style={[
                 styles.userName,

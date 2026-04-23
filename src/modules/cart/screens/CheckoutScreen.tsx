@@ -461,6 +461,17 @@ export function CheckoutScreen() {
         );
       }
     } catch (error: any) {
+      if (__DEV__) {
+        console.warn(
+          `[checkout ERROR] ${paymentMethod}\n` +
+            `  message: ${error?.message ?? 'n/a'}\n` +
+            `  description: ${error?.description ?? 'n/a'}\n` +
+            `  code: ${error?.code ?? 'n/a'}\n` +
+            `  response: ${
+              error?.response?.data ? JSON.stringify(error.response.data).slice(0, 400) : 'n/a'
+            }`,
+        );
+      }
       const message = error?.description ?? error?.message ?? 'Something went wrong';
       showToast('error', message);
     } finally {
