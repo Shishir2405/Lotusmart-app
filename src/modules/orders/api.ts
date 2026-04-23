@@ -1,15 +1,17 @@
 import api from '../../services/api';
-import {
-  IAddress,
-  IApiResponse,
-  IOrder,
-  IOrderItem,
-  IPaginatedResponse,
-  PaymentMethod,
-} from '../../types';
+import { IAddress, IApiResponse, IOrder, IPaginatedResponse, PaymentMethod } from '../../types';
+
+export interface ICreateOrderItem {
+  product: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+  variant?: string;
+}
 
 export interface ICreateOrderData {
-  items: Omit<IOrderItem, 'name' | 'image'>[];
+  items: ICreateOrderItem[];
   shippingAddress: IAddress;
   billingAddress?: IAddress;
   paymentMethod: PaymentMethod;
@@ -17,9 +19,7 @@ export interface ICreateOrderData {
   notes?: string;
 }
 
-export const createOrder = async (
-  data: ICreateOrderData,
-): Promise<IApiResponse<IOrder>> => {
+export const createOrder = async (data: ICreateOrderData): Promise<IApiResponse<IOrder>> => {
   const response = await api.post('/orders', data);
   return response.data;
 };
@@ -32,16 +32,12 @@ export const getOrders = async (
   return response.data;
 };
 
-export const getOrder = async (
-  id: string,
-): Promise<IApiResponse<IOrder>> => {
+export const getOrder = async (id: string): Promise<IApiResponse<IOrder>> => {
   const response = await api.get(`/orders/${id}`);
   return response.data;
 };
 
-export const cancelOrder = async (
-  id: string,
-): Promise<IApiResponse<IOrder>> => {
+export const cancelOrder = async (id: string): Promise<IApiResponse<IOrder>> => {
   const response = await api.put(`/orders/${id}/cancel`);
   return response.data;
 };

@@ -378,6 +378,8 @@ export function CheckoutScreen() {
     try {
       const orderItems = cartItems.map((item) => ({
         product: item.productId,
+        name: item.name,
+        image: item.image,
         price: item.price,
         quantity: item.quantity,
         variant: item.variant,
@@ -461,6 +463,17 @@ export function CheckoutScreen() {
         );
       }
     } catch (error: any) {
+      if (__DEV__) {
+        console.warn(
+          `[checkout ERROR] ${paymentMethod}\n` +
+            `  message: ${error?.message ?? 'n/a'}\n` +
+            `  description: ${error?.description ?? 'n/a'}\n` +
+            `  code: ${error?.code ?? 'n/a'}\n` +
+            `  response: ${
+              error?.response?.data ? JSON.stringify(error.response.data).slice(0, 400) : 'n/a'
+            }`,
+        );
+      }
       const message = error?.description ?? error?.message ?? 'Something went wrong';
       showToast('error', message);
     } finally {
