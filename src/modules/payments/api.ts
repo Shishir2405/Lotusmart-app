@@ -3,26 +3,33 @@ import { IApiResponse, IOrder } from '../../types';
 
 export const createRazorpayOrder = async (
   amount: number,
-  orderId: string,
+  internalOrderId: string,
 ): Promise<
-  IApiResponse<{ razorpayOrderId: string; amount: number; currency: string }>
+  IApiResponse<{
+    razorpayOrderId: string;
+    amount: number;
+    currency: string;
+    keyId?: string;
+  }>
 > => {
-  const response = await api.post('/payments/razorpay/create', {
+  const response = await api.post('/payments/razorpay', {
     amount,
-    orderId,
+    internalOrderId,
   });
   return response.data;
 };
 
 export const verifyPayment = async (
-  orderId: string,
-  paymentId: string,
-  signature: string,
+  internalOrderId: string,
+  razorpayOrderId: string,
+  razorpayPaymentId: string,
+  razorpaySignature: string,
 ): Promise<IApiResponse<{ success: boolean; order: IOrder }>> => {
-  const response = await api.post('/payments/razorpay/verify', {
-    orderId,
-    paymentId,
-    signature,
+  const response = await api.post('/payments/verify', {
+    internalOrderId,
+    razorpay_order_id: razorpayOrderId,
+    razorpay_payment_id: razorpayPaymentId,
+    razorpay_signature: razorpaySignature,
   });
   return response.data;
 };

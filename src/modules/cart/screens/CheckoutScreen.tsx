@@ -417,7 +417,7 @@ export function CheckoutScreen() {
 
         const razorpayRes = await createRazorpayOrderMutation.mutateAsync({
           amount: order.total,
-          orderId: order._id,
+          internalOrderId: order._id,
         });
 
         const razorpayData = razorpayRes.data;
@@ -444,9 +444,10 @@ export function CheckoutScreen() {
         const paymentResponse: RazorpaySuccessResponse = await RazorpayCheckout.open(options);
 
         await verifyPaymentMutation.mutateAsync({
-          orderId: order._id,
-          paymentId: paymentResponse.razorpay_payment_id,
-          signature: paymentResponse.razorpay_signature,
+          internalOrderId: order._id,
+          razorpayOrderId: razorpayData.razorpayOrderId,
+          razorpayPaymentId: paymentResponse.razorpay_payment_id,
+          razorpaySignature: paymentResponse.razorpay_signature,
         });
 
         clearCart();
