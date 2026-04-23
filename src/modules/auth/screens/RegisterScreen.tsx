@@ -51,6 +51,7 @@ export default function RegisterScreen() {
         phone: data.phone,
         password: data.password,
         confirmPassword: data.confirmPassword,
+        address: data.address,
       },
       {
         onSuccess: () => {
