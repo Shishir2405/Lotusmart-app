@@ -231,10 +231,15 @@ export interface IProductFilters {
   minPrice?: number;
   maxPrice?: number;
   sort?: string;
+  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'popular' | 'relevance';
   search?: string;
   page?: number;
   limit?: number;
   tags?: string;
   isFeatured?: boolean;
+  isOrganic?: boolean;
+  isVegan?: boolean;
+  isGlutenFree?: boolean;
+  inStock?: boolean;
   productType?: ProductType;
 }
