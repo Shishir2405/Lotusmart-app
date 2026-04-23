@@ -50,6 +50,14 @@ export default function RegisterScreen() {
     });
   };
 
+  const routeAfterAuth = (profileComplete: boolean) => {
+    if (profileComplete) {
+      goToMain();
+      return;
+    }
+    navigation.navigate('CompleteProfile');
+  };
+
   const onSubmit = (data: RegisterFormData) => {
     registerMutation.mutate(
       {
@@ -61,7 +69,10 @@ export default function RegisterScreen() {
         address: data.address,
       },
       {
-        onSuccess: goToMain,
+        onSuccess: (res) => {
+          const user = res.data?.user;
+          routeAfterAuth(Boolean(user?.profileComplete));
+        },
         onError: (error: Error & { response?: { data?: { message?: string } } }) => {
           const message =
             error?.response?.data?.message ||
@@ -121,7 +132,10 @@ export default function RegisterScreen() {
             entering={FadeInDown.delay(300).duration(400)}
             style={styles.googleSection}
           >
-            <GoogleSignInButton label="Continue with Google" onSignedIn={goToMain} />
+            <GoogleSignInButton
+              label="Continue with Google"
+              onSignedIn={({ profileComplete }) => routeAfterAuth(profileComplete)}
+            />
             <View style={styles.dividerRow}>
               <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
               <Text
