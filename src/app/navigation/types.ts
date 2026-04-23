@@ -17,6 +17,7 @@ export type RootStackParamList = {
   Addresses: undefined;
   ChangePassword: undefined;
   Wishlist: undefined;
+  EditProfile: undefined;
   FAQ: undefined;
   Contact: undefined;
   Policy: { type: 'terms' | 'privacy-policy' | 'refund-policy' | 'shipping-policy' };
