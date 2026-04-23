@@ -378,6 +378,8 @@ export function CheckoutScreen() {
     try {
       const orderItems = cartItems.map((item) => ({
         product: item.productId,
+        name: item.name,
+        image: item.image,
         price: item.price,
         quantity: item.quantity,
         variant: item.variant,
