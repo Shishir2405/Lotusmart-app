@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  Linking,
   StyleSheet,
   RefreshControl,
   Dimensions,
@@ -22,6 +23,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Skeleton } from '../../../components/ui';
 import { useCategories, useFeaturedProducts, useProducts } from '../hooks';
 import { useLoadingCap } from '../../../hooks/useLoadingCap';
+import { useBanners } from '../../banners/hooks';
 import { useFAQs } from '../../site-config/hooks';
 import type { FAQItem } from '../../site-config/api';
 import { ProductCard } from '../components/ProductCard';
@@ -69,91 +71,181 @@ const HERO_SLIDES = [
   },
 ];
 
+const COLOR_SCHEMES: Record<string, { bg: [string, string]; accent: string }> = {
+  amber: { bg: ['#B45309', '#7C3E08'], accent: '#FCD34D' },
+  olive: { bg: ['#5C6B3C', '#3E4A28'], accent: '#B59F6B' },
+  rose: { bg: ['#8B4B6B', '#6B3550'], accent: '#F9B4C7' },
+  emerald: { bg: ['#065F46', '#043F30'], accent: '#6EE7B7' },
+  sky: { bg: ['#075985', '#0C4A6E'], accent: '#7DD3FC' },
+};
+
 function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
+  const navigation = useNavigation<NavProp>();
+  const { data: bannersRes } = useBanners('hero');
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollRef = useRef<FlatList>(null);
 
+  const remote = bannersRes?.data ?? [];
+  const useRemote = remote.length > 0;
+
+  const slides = useMemo(() => {
+    if (useRemote) {
+      return remote.map((b) => {
+        const scheme = COLOR_SCHEMES[b.colorScheme ?? 'olive'] ?? COLOR_SCHEMES.olive;
+        return {
+          id: b._id,
+          tag: b.subtitle ?? '',
+          title: b.title,
+          titleHighlight: '',
+          subtitle: b.subtitle ?? '',
+          image: b.image,
+          link: b.link,
+          bgColor: scheme.bg,
+          accentColor: scheme.accent,
+          ctaText: 'Shop Now',
+        };
+      });
+    }
+    return HERO_SLIDES.map((s, i) => ({
+      id: `static-${i}`,
+      tag: s.tag,
+      title: s.title,
+      titleHighlight: s.titleHighlight,
+      subtitle: s.subtitle,
+      image: undefined as string | undefined,
+      link: undefined as string | undefined,
+      bgColor: s.bgColor,
+      accentColor: s.accentColor,
+      ctaText: s.ctaText,
+    }));
+  }, [useRemote, remote]);
+
   useEffect(() => {
+    if (slides.length <= 1) return;
     const timer = setInterval(() => {
       setActiveSlide((prev) => {
-        const next = (prev + 1) % HERO_SLIDES.length;
+        const next = (prev + 1) % slides.length;
         scrollRef.current?.scrollToOffset({ offset: next * SCREEN_WIDTH, animated: true });
         return next;
       });
     }, 5500);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setActiveSlide(index);
   };
 
+  const onSlidePress = (link?: string) => {
+    if (!link) {
+      onShopPress();
+      return;
+    }
+    if (link.startsWith('/product/')) {
+      const productId = link.replace('/product/', '');
+      navigation.navigate('ProductDetail', { productId });
+      return;
+    }
+    if (link.startsWith('/category/')) {
+      const category = link.replace('/category/', '');
+      navigation.navigate('ProductList', { category, title: category });
+      return;
+    }
+    if (link.startsWith('http')) {
+      void Linking.openURL(link);
+      return;
+    }
+    onShopPress();
+  };
+
   return (
     <View>
       <FlatList
         ref={scrollRef}
-        data={HERO_SLIDES}
+        data={slides}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onScrollEnd}
-        keyExtractor={(_, i) => `hero-${i}`}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <LinearGradient
-            colors={item.bgColor}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[heroStyles.slide, { width: SCREEN_WIDTH }]}
-          >
-            <View style={heroStyles.content}>
-              <Text style={[heroStyles.tag, { color: item.accentColor }]}>{item.tag}</Text>
-              <Text style={heroStyles.title}>
-                {item.title}
-                {'\n'}
-                <Text style={[heroStyles.titleHighlight, { color: item.accentColor }]}>
-                  {item.titleHighlight}
-                </Text>
-              </Text>
-              <Text style={heroStyles.subtitle}>{item.subtitle}</Text>
-              <TouchableOpacity
-                style={[heroStyles.cta, { backgroundColor: item.accentColor }]}
-                onPress={onShopPress}
-                activeOpacity={0.8}
-              >
-                <Text style={heroStyles.ctaText}>{item.ctaText}</Text>
-                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-              </TouchableOpacity>
-
-              {/* Trust badges */}
-              <View style={heroStyles.trustRow}>
-                <View style={heroStyles.trustBadge}>
-                  <Ionicons name="leaf-outline" size={12} color="rgba(255,255,255,0.7)" />
-                  <Text style={heroStyles.trustText}>100% Natural</Text>
-                </View>
-                <View style={heroStyles.trustBadge}>
-                  <Ionicons
-                    name="shield-checkmark-outline"
-                    size={12}
-                    color="rgba(255,255,255,0.7)"
-                  />
-                  <Text style={heroStyles.trustText}>FSSAI Certified</Text>
-                </View>
-                <View style={heroStyles.trustBadge}>
-                  <Ionicons name="car-outline" size={12} color="rgba(255,255,255,0.7)" />
-                  <Text style={heroStyles.trustText}>Free Shipping</Text>
+          <TouchableOpacity activeOpacity={0.92} onPress={() => onSlidePress(item.link)}>
+            {item.image ? (
+              <View style={[heroStyles.slide, { width: SCREEN_WIDTH }]}>
+                <Image source={{ uri: item.image }} style={heroStyles.slideImage} />
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.65)']}
+                  style={heroStyles.imageOverlay}
+                />
+                <View style={heroStyles.imageContent}>
+                  {item.tag ? (
+                    <Text style={[heroStyles.tag, { color: item.accentColor }]}>{item.tag}</Text>
+                  ) : null}
+                  <Text style={heroStyles.title}>{item.title}</Text>
+                  <View
+                    style={[heroStyles.cta, { backgroundColor: item.accentColor, marginTop: 10 }]}
+                  >
+                    <Text style={heroStyles.ctaText}>{item.ctaText}</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                  </View>
                 </View>
               </View>
-            </View>
-          </LinearGradient>
+            ) : (
+              <LinearGradient
+                colors={item.bgColor}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[heroStyles.slide, { width: SCREEN_WIDTH }]}
+              >
+                <View style={heroStyles.content}>
+                  <Text style={[heroStyles.tag, { color: item.accentColor }]}>{item.tag}</Text>
+                  <Text style={heroStyles.title}>
+                    {item.title}
+                    {item.titleHighlight ? (
+                      <>
+                        {'\n'}
+                        <Text style={[heroStyles.titleHighlight, { color: item.accentColor }]}>
+                          {item.titleHighlight}
+                        </Text>
+                      </>
+                    ) : null}
+                  </Text>
+                  <Text style={heroStyles.subtitle}>{item.subtitle}</Text>
+                  <View style={[heroStyles.cta, { backgroundColor: item.accentColor }]}>
+                    <Text style={heroStyles.ctaText}>{item.ctaText}</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                  </View>
+
+                  <View style={heroStyles.trustRow}>
+                    <View style={heroStyles.trustBadge}>
+                      <Ionicons name="leaf-outline" size={12} color="rgba(255,255,255,0.7)" />
+                      <Text style={heroStyles.trustText}>100% Natural</Text>
+                    </View>
+                    <View style={heroStyles.trustBadge}>
+                      <Ionicons
+                        name="shield-checkmark-outline"
+                        size={12}
+                        color="rgba(255,255,255,0.7)"
+                      />
+                      <Text style={heroStyles.trustText}>FSSAI Certified</Text>
+                    </View>
+                    <View style={heroStyles.trustBadge}>
+                      <Ionicons name="car-outline" size={12} color="rgba(255,255,255,0.7)" />
+                      <Text style={heroStyles.trustText}>Free Shipping</Text>
+                    </View>
+                  </View>
+                </View>
+              </LinearGradient>
+            )}
+          </TouchableOpacity>
         )}
       />
 
-      {/* Progress indicators */}
       <View style={heroStyles.indicatorRow}>
-        {HERO_SLIDES.map((_, i) => (
+        {slides.map((s, i) => (
           <View
-            key={i}
+            key={s.id}
             style={[
               heroStyles.indicator,
               {
@@ -172,6 +264,21 @@ const heroStyles = StyleSheet.create({
   slide: {
     height: 260,
     justifyContent: 'center',
+  },
+  slideImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  imageContent: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    bottom: 22,
   },
   content: {
     paddingHorizontal: 24,

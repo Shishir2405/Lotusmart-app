@@ -14,6 +14,7 @@ import AddressesScreen from '../../modules/users/screens/AddressesScreen';
 import ChangePasswordScreen from '../../modules/users/screens/ChangePasswordScreen';
 import FAQScreen from '../../modules/site-config/screens/FAQScreen';
 import PolicyScreen from '../../modules/site-config/screens/PolicyScreen';
+import ContactScreen from '../../modules/site-config/screens/ContactScreen';
 import { RootStackParamList } from './types';
 import { FONTS } from '../../config/fonts';
 
@@ -104,6 +105,14 @@ export function RootNavigator() {
         component={FAQScreen}
         options={{
           title: 'FAQs',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="Contact"
+        component={ContactScreen}
+        options={{
+          title: 'Contact Us',
           animation: 'slide_from_right',
         }}
       />
