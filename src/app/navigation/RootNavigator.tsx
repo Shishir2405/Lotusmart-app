@@ -13,6 +13,7 @@ import OrderDetailScreen from '../../modules/orders/screens/OrderDetailScreen';
 import AddressesScreen from '../../modules/users/screens/AddressesScreen';
 import ChangePasswordScreen from '../../modules/users/screens/ChangePasswordScreen';
 import WishlistScreen from '../../modules/wishlist/screens/WishlistScreen';
+import EditProfileScreen from '../../modules/users/screens/EditProfileScreen';
 import FAQScreen from '../../modules/site-config/screens/FAQScreen';
 import PolicyScreen from '../../modules/site-config/screens/PolicyScreen';
 import ContactScreen from '../../modules/site-config/screens/ContactScreen';
@@ -165,6 +166,14 @@ export function RootNavigator() {
             component={WishlistScreen}
             options={{
               title: 'My Wishlist',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{
+              title: 'Edit Profile',
               animation: 'slide_from_right',
             }}
           />

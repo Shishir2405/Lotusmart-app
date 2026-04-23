@@ -7,6 +7,7 @@ import {
   completeProfile,
   verifyEmail,
   getMe,
+  updateProfile,
   forgotPassword,
   getAddresses,
   createAddress,
@@ -14,6 +15,7 @@ import {
   deleteAddress,
   RegisterPayload,
   CompleteProfilePayload,
+  UpdateProfilePayload,
 } from './api';
 import { mergeCart } from '../cart/api';
 import { mergeWishlist } from '../wishlist/api';
@@ -155,6 +157,20 @@ export function useMe() {
     queryKey: authKeys.me,
     queryFn: getMe,
     enabled: !!token,
+  });
+}
+
+export function useUpdateProfile() {
+  const { setUser } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdateProfilePayload) => updateProfile(payload),
+    onSuccess: (response) => {
+      const updated = response.data;
+      if (updated) setUser(updated);
+      queryClient.invalidateQueries({ queryKey: authKeys.me });
+    },
   });
 }
 

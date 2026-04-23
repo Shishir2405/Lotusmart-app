@@ -70,6 +70,13 @@ export default function ProfileScreen() {
   const menuItems: MenuItem[] = user
     ? [
         {
+          icon: 'person-circle-outline',
+          label: 'Edit Profile',
+          bgColor: '#E0F2FE',
+          color: '#0284C7',
+          onPress: () => navigation.navigate('EditProfile'),
+        },
+        {
           icon: 'cube-outline',
           label: 'My Orders',
           bgColor: COLORS.roseLight,

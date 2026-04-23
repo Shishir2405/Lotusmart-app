@@ -73,6 +73,19 @@ export const getMe = async (): Promise<IApiResponse<IUser>> => {
   return response.data;
 };
 
+export interface UpdateProfilePayload {
+  name?: string;
+  phone?: string;
+  avatar?: string;
+}
+
+export const updateProfile = async (
+  payload: UpdateProfilePayload,
+): Promise<IApiResponse<IUser>> => {
+  const response = await api.patch('/auth/me', payload);
+  return response.data;
+};
+
 export const forgotPassword = async (email: string): Promise<IApiResponse<{ message: string }>> => {
   const response = await api.post('/auth/forgot-password', { email });
   return response.data;

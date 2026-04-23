@@ -3,5 +3,6 @@ export type ProfileStackParamList = {
   Addresses: undefined;
   ChangePassword: undefined;
   Wishlist: undefined;
+  EditProfile: undefined;
   EditAddress: { addressId: string };
 };
