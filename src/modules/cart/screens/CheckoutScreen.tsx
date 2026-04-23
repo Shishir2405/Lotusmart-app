@@ -19,6 +19,7 @@ import { Button, Input } from '../../../components/ui';
 import { Modal } from '../../../components/ui/Modal';
 import { useToast } from '../../../components/ui/Toast';
 import { LocationPicker, LocationPickerValue } from '../../../components/shared/LocationPicker';
+import { CouponSection } from '../components/CouponSection';
 import { useCartStore } from '../../../store/cart.store';
 import { useAuthStore } from '../../../store/auth.store';
 import { useAddresses, useCreateAddress } from '../../auth/hooks';
@@ -537,6 +538,21 @@ export function CheckoutScreen() {
           </Text>
         </View>
       ))}
+
+      {/* Coupon */}
+      <View
+        style={[
+          styles.summaryCard,
+          {
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.borderRadius.md,
+            borderColor: theme.colors.border,
+            marginBottom: 16,
+          },
+        ]}
+      >
+        <CouponSection orderTotal={subtotal + shippingCost} />
+      </View>
 
       {/* Order Summary */}
       <View

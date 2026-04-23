@@ -4,16 +4,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ICartItem } from '../types';
 import { generateCartItemKey } from '../utils/helpers';
 
+export interface AppliedCoupon {
+  code: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  discount: number;
+}
+
 interface CartState {
   items: ICartItem[];
   couponCode: string | null;
   discount: number;
+  appliedCoupon: AppliedCoupon | null;
 
   addItem: (item: ICartItem) => void;
   removeItem: (productId: string, variant?: string) => void;
   updateQuantity: (productId: string, quantity: number, variant?: string) => void;
   clearCart: () => void;
-  applyCoupon: (code: string, discount: number) => void;
+  applyCoupon: (coupon: AppliedCoupon) => void;
   removeCoupon: () => void;
   mergeServerCart: (serverItems: ICartItem[]) => void;
 
@@ -30,6 +39,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       couponCode: null,
       discount: 0,
+      appliedCoupon: null,
 
       addItem: (item) =>
         set((state) => {
@@ -79,20 +89,23 @@ export const useCartStore = create<CartState>()(
           };
         }),
 
-      clearCart: () => set({ items: [], couponCode: null, discount: 0 }),
+      clearCart: () => set({ items: [], couponCode: null, discount: 0, appliedCoupon: null }),
 
-      applyCoupon: (code, discount) => set({ couponCode: code, discount }),
+      applyCoupon: (coupon) =>
+        set({
+          couponCode: coupon.code,
+          discount: coupon.discount,
+          appliedCoupon: coupon,
+        }),
 
-      removeCoupon: () => set({ couponCode: null, discount: 0 }),
+      removeCoupon: () => set({ couponCode: null, discount: 0, appliedCoupon: null }),
 
       mergeServerCart: (serverItems) =>
         set((state) => {
           const merged = [...state.items];
           for (const serverItem of serverItems) {
             const key = generateCartItemKey(serverItem.productId, serverItem.variant);
-            const exists = merged.find(
-              (i) => generateCartItemKey(i.productId, i.variant) === key,
-            );
+            const exists = merged.find((i) => generateCartItemKey(i.productId, i.variant) === key);
             if (!exists) {
               merged.push(serverItem);
             }
@@ -113,15 +126,13 @@ export const useCartStore = create<CartState>()(
       isInCart: (productId, variant) =>
         get().items.some(
           (i) =>
-            generateCartItemKey(i.productId, i.variant) ===
-            generateCartItemKey(productId, variant),
+            generateCartItemKey(i.productId, i.variant) === generateCartItemKey(productId, variant),
         ),
 
       getItem: (productId, variant) =>
         get().items.find(
           (i) =>
-            generateCartItemKey(i.productId, i.variant) ===
-            generateCartItemKey(productId, variant),
+            generateCartItemKey(i.productId, i.variant) === generateCartItemKey(productId, variant),
         ),
     }),
     {
@@ -131,6 +142,7 @@ export const useCartStore = create<CartState>()(
         items: state.items,
         couponCode: state.couponCode,
         discount: state.discount,
+        appliedCoupon: state.appliedCoupon,
       }),
     },
   ),
