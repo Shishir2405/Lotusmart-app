@@ -1,34 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSiteConfig } from './api';
+import { getSiteConfig, PolicyValue, ContactValue, FAQItem } from './api';
 
 export const siteConfigKeys = {
   config: (key: string) => ['site-config', key] as const,
 };
 
-export function useSiteConfig(key: string) {
+export function useSiteConfig<T = unknown>(key: string) {
   return useQuery({
     queryKey: siteConfigKeys.config(key),
-    queryFn: () => getSiteConfig(key),
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    queryFn: () => getSiteConfig<T>(key),
+    staleTime: 10 * 60 * 1000,
   });
 }
 
 export function useFAQs() {
-  return useSiteConfig('faq');
+  return useSiteConfig<{ items?: FAQItem[] }>('faq');
 }
 
 export function useTermsAndConditions() {
-  return useSiteConfig('terms');
+  return useSiteConfig<PolicyValue>('terms');
 }
 
 export function usePrivacyPolicy() {
-  return useSiteConfig('privacy-policy');
+  return useSiteConfig<PolicyValue>('privacy');
 }
 
 export function useRefundPolicy() {
-  return useSiteConfig('refund-policy');
+  return useSiteConfig<PolicyValue>('refund');
 }
 
 export function useShippingPolicy() {
-  return useSiteConfig('shipping-policy');
+  return useSiteConfig<PolicyValue>('shipping');
+}
+
+export function useContactInfo() {
+  return useSiteConfig<ContactValue>('contact');
 }

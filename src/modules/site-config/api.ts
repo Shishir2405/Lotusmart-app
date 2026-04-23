@@ -9,14 +9,36 @@ export interface FAQItem {
   sortOrder: number;
 }
 
-export interface SiteConfigValue {
-  key: string;
-  value: any;
+export interface PolicyValue {
+  title?: string;
+  content?: string;
+  lastUpdated?: string;
 }
 
-export const getSiteConfig = async (
+export interface ContactValue {
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  address?: string;
+  mapEmbedUrl?: string;
+  socialLinks?: {
+    instagram?: string;
+    facebook?: string;
+    twitter?: string;
+    youtube?: string;
+    whatsapp?: string;
+  };
+  businessHours?: string;
+}
+
+export interface SiteConfigEntry<T = unknown> {
+  key: string;
+  value: T | null;
+}
+
+export const getSiteConfig = async <T = unknown>(
   key: string,
-): Promise<IApiResponse<SiteConfigValue>> => {
-  const response = await api.get(`/site-config/${key}`);
+): Promise<IApiResponse<SiteConfigEntry<T>>> => {
+  const response = await api.get(`/site-config`, { params: { key } });
   return response.data;
 };
