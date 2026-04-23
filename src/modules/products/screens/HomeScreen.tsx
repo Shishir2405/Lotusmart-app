@@ -1051,7 +1051,7 @@ export function HomeScreen() {
           <SectionHeader
             title="Shop by Category"
             subtitle="Browse our premium collections"
-            onViewAll={() => navigation.navigate('ProductList', { title: 'All Categories' })}
+            onViewAll={() => navigation.navigate('Main', { screen: 'CategoriesTab' })}
           />
           {showCategoriesSkeleton ? (
             <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 12 }}>
