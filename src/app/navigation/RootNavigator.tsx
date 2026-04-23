@@ -17,6 +17,8 @@ import EditProfileScreen from '../../modules/users/screens/EditProfileScreen';
 import FAQScreen from '../../modules/site-config/screens/FAQScreen';
 import PolicyScreen from '../../modules/site-config/screens/PolicyScreen';
 import ContactScreen from '../../modules/site-config/screens/ContactScreen';
+import BlogListScreen from '../../modules/blog/screens/BlogListScreen';
+import BlogDetailScreen from '../../modules/blog/screens/BlogDetailScreen';
 import { RootStackParamList } from './types';
 import { FONTS } from '../../config/fonts';
 
@@ -117,6 +119,23 @@ export function RootNavigator() {
           title: 'Contact Us',
           animation: 'slide_from_right',
         }}
+      />
+      <Stack.Screen
+        name="BlogList"
+        component={BlogListScreen}
+        options={{
+          title: 'Blog',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="BlogDetail"
+        component={BlogDetailScreen}
+        options={({ route }: { route: { params?: { title?: string } } }) => ({
+          title: route.params?.title ?? 'Article',
+          animation: 'slide_from_right',
+          headerBackTitle: 'Back',
+        })}
       />
       <Stack.Screen
         name="Policy"
