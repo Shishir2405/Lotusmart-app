@@ -4,8 +4,8 @@ import { orderKeys } from '../orders/hooks';
 
 export function useCreateRazorpayOrder() {
   return useMutation({
-    mutationFn: ({ amount, orderId }: { amount: number; orderId: string }) =>
-      createRazorpayOrder(amount, orderId),
+    mutationFn: ({ amount, internalOrderId }: { amount: number; internalOrderId: string }) =>
+      createRazorpayOrder(amount, internalOrderId),
   });
 }
 
@@ -14,14 +14,16 @@ export function useVerifyPayment() {
 
   return useMutation({
     mutationFn: ({
-      orderId,
-      paymentId,
-      signature,
+      internalOrderId,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
     }: {
-      orderId: string;
-      paymentId: string;
-      signature: string;
-    }) => verifyPayment(orderId, paymentId, signature),
+      internalOrderId: string;
+      razorpayOrderId: string;
+      razorpayPaymentId: string;
+      razorpaySignature: string;
+    }) => verifyPayment(internalOrderId, razorpayOrderId, razorpayPaymentId, razorpaySignature),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.all });
     },
