@@ -12,6 +12,7 @@ import { CheckoutScreen } from '../../modules/cart/screens/CheckoutScreen';
 import OrderDetailScreen from '../../modules/orders/screens/OrderDetailScreen';
 import AddressesScreen from '../../modules/users/screens/AddressesScreen';
 import ChangePasswordScreen from '../../modules/users/screens/ChangePasswordScreen';
+import WishlistScreen from '../../modules/wishlist/screens/WishlistScreen';
 import FAQScreen from '../../modules/site-config/screens/FAQScreen';
 import PolicyScreen from '../../modules/site-config/screens/PolicyScreen';
 import ContactScreen from '../../modules/site-config/screens/ContactScreen';
@@ -156,6 +157,14 @@ export function RootNavigator() {
             component={ChangePasswordScreen}
             options={{
               title: 'Change Password',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="Wishlist"
+            component={WishlistScreen}
+            options={{
+              title: 'My Wishlist',
               animation: 'slide_from_right',
             }}
           />

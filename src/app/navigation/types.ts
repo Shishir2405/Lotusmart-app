@@ -16,6 +16,7 @@ export type RootStackParamList = {
   OrderDetail: { orderId: string };
   Addresses: undefined;
   ChangePassword: undefined;
+  Wishlist: undefined;
   FAQ: undefined;
   Contact: undefined;
   Policy: { type: 'terms' | 'privacy-policy' | 'refund-policy' | 'shipping-policy' };
