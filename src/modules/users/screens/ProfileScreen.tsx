@@ -120,6 +120,16 @@ export default function ProfileScreen() {
         ),
     },
     {
+      icon: 'mail-outline',
+      label: 'Contact Us',
+      bgColor: COLORS.roseLight,
+      color: COLORS.rose,
+      onPress: () =>
+        (navigation as NativeStackNavigationProp<Record<string, object | undefined>>).navigate(
+          'Contact',
+        ),
+    },
+    {
       icon: 'document-text-outline',
       label: 'Terms & Conditions',
       bgColor: '#F0F9FF',
