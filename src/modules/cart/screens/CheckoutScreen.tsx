@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,26 +13,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import RazorpayCheckout from 'react-native-razorpay';
 import { useTheme } from '../../../theme/ThemeContext';
-import { Button, Card, Input } from '../../../components/ui';
+import { Button, Input } from '../../../components/ui';
 import { Modal } from '../../../components/ui/Modal';
 import { useToast } from '../../../components/ui/Toast';
+import { LocationPicker, LocationPickerValue } from '../../../components/shared/LocationPicker';
 import { useCartStore } from '../../../store/cart.store';
 import { useAuthStore } from '../../../store/auth.store';
 import { useAddresses, useCreateAddress } from '../../auth/hooks';
 import { useCreateOrder } from '../../orders/hooks';
 import { useCreateRazorpayOrder, useVerifyPayment } from '../../payments/hooks';
-import { addressSchema, AddressFormData } from '../../../utils/validators';
 import { formatCurrency, getShippingCost } from '../../../utils/helpers';
-import {
-  FREE_SHIPPING_THRESHOLD,
-  RAZORPAY_KEY,
-} from '../../../config/constants';
+import { FREE_SHIPPING_THRESHOLD, RAZORPAY_KEY, COLORS } from '../../../config/constants';
 import { FONTS } from '../../../config/fonts';
-import { IAddress, PaymentMethod } from '../../../types';
+import { IAddress, PaymentMethod, AddressLabel } from '../../../types';
 import { RazorpaySuccessResponse } from '../../payments/types';
 
 type CheckoutNavigation = NativeStackNavigationProp<any>;
@@ -41,6 +36,42 @@ const STEPS = [
   { key: 'cart', label: 'Cart', icon: 'cart-outline' as const },
   { key: 'address', label: 'Address', icon: 'location-outline' as const },
   { key: 'payment', label: 'Payment', icon: 'card-outline' as const },
+];
+
+interface AddressFormState {
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
+  label: AddressLabel;
+  coordinates?: { lat: number; lng: number };
+  formattedAddress?: string;
+}
+
+const EMPTY_ADDRESS_FORM: AddressFormState = {
+  fullName: '',
+  phone: '',
+  addressLine1: '',
+  addressLine2: '',
+  city: '',
+  state: '',
+  pincode: '',
+  isDefault: false,
+  label: 'home',
+};
+
+const ADDRESS_LABELS: {
+  value: AddressLabel;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { value: 'home', label: 'Home', icon: 'home-outline' },
+  { value: 'work', label: 'Work', icon: 'briefcase-outline' },
+  { value: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' },
 ];
 
 function StepIndicator({
@@ -78,8 +109,8 @@ function StepIndicator({
                     backgroundColor: isActive
                       ? theme.colors.primary
                       : isCompleted
-                      ? theme.colors.success
-                      : theme.colors.border,
+                        ? theme.colors.success
+                        : theme.colors.border,
                   },
                 ]}
               >
@@ -100,8 +131,8 @@ function StepIndicator({
                     color: isActive
                       ? theme.colors.primary
                       : isCompleted
-                      ? theme.colors.success
-                      : theme.colors.textSecondary,
+                        ? theme.colors.success
+                        : theme.colors.textSecondary,
                   },
                 ]}
               >
@@ -113,9 +144,7 @@ function StepIndicator({
                 style={[
                   stepStyles.connector,
                   {
-                    backgroundColor: isCompleted
-                      ? theme.colors.success
-                      : theme.colors.border,
+                    backgroundColor: isCompleted ? theme.colors.success : theme.colors.border,
                   },
                 ]}
               />
@@ -187,8 +216,13 @@ export function CheckoutScreen() {
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
+  // Address form state (used for guest + logged-in add-new-address)
+  const [addressForm, setAddressForm] = useState<AddressFormState>(EMPTY_ADDRESS_FORM);
+  const [addressErrors, setAddressErrors] = useState<
+    Partial<Record<keyof AddressFormState, string>>
+  >({});
   // Guest address state (for users not logged in)
-  const [guestAddress, setGuestAddress] = useState<AddressFormData | null>(null);
+  const [guestAddress, setGuestAddress] = useState<IAddress | null>(null);
 
   // Auto-select default address for logged-in users
   React.useEffect(() => {
@@ -209,62 +243,87 @@ export function CheckoutScreen() {
     [addresses, selectedAddressId],
   );
 
-  // Address Form
-  const {
-    control,
-    handleSubmit,
-    reset: resetForm,
-    formState: { errors },
-  } = useForm<AddressFormData>({
-    resolver: zodResolver(addressSchema),
-    defaultValues: {
-      fullName: '',
-      phone: '',
-      addressLine1: '',
-      addressLine2: '',
-      city: '',
-      state: '',
-      pincode: '',
-      isDefault: false,
-    },
+  useEffect(() => {
+    if (!addressModalVisible) return;
+    setAddressForm({
+      ...EMPTY_ADDRESS_FORM,
+      fullName: user?.name ?? '',
+      phone: user?.phone ?? '',
+    });
+    setAddressErrors({});
+  }, [addressModalVisible, user]);
+
+  const setAddressField = <K extends keyof AddressFormState>(k: K, v: AddressFormState[K]) => {
+    setAddressForm((f) => ({ ...f, [k]: v }));
+    if (addressErrors[k]) setAddressErrors((p) => ({ ...p, [k]: undefined }));
+  };
+
+  const onLocationPick = (value: LocationPickerValue) => {
+    setAddressForm((f) => ({
+      ...f,
+      addressLine1: value.addressLine1 || f.addressLine1,
+      addressLine2: value.addressLine2 ?? f.addressLine2,
+      city: value.city || f.city,
+      state: value.state || f.state,
+      pincode: value.pincode || f.pincode,
+      coordinates: value.coordinates ?? f.coordinates,
+      formattedAddress: value.formattedAddress ?? f.formattedAddress,
+    }));
+  };
+
+  const validateAddressForm = () => {
+    const e: Partial<Record<keyof AddressFormState, string>> = {};
+    if (addressForm.fullName.trim().length < 2) e.fullName = 'Full name is required';
+    if (!/^[6-9]\d{9}$/.test(addressForm.phone)) e.phone = 'Enter a valid 10-digit mobile';
+    if (addressForm.addressLine1.trim().length < 5)
+      e.addressLine1 = 'Address must be at least 5 characters';
+    if (!addressForm.city.trim()) e.city = 'City is required';
+    if (!addressForm.state.trim()) e.state = 'State is required';
+    if (!/^\d{6}$/.test(addressForm.pincode)) e.pincode = 'Pincode must be 6 digits';
+    setAddressErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const buildAddressPayload = (): Omit<IAddress, '_id'> => ({
+    fullName: addressForm.fullName,
+    phone: addressForm.phone,
+    addressLine1: addressForm.addressLine1,
+    addressLine2: addressForm.addressLine2 || undefined,
+    city: addressForm.city,
+    state: addressForm.state,
+    pincode: addressForm.pincode,
+    isDefault: addressForm.isDefault,
+    label: addressForm.label,
+    coordinates: addressForm.coordinates,
+    formattedAddress: addressForm.formattedAddress,
   });
 
-  const handleAddAddress = useCallback(
-    async (data: AddressFormData) => {
-      if (user) {
-        try {
-          await createAddressMutation.mutateAsync(data);
-          showToast('success', 'Address added successfully');
-          setAddressModalVisible(false);
-          resetForm();
-        } catch {
-          showToast('error', 'Failed to add address');
-        }
-      } else {
-        // Guest user - save address locally
-        setGuestAddress(data);
+  const handleSaveAddress = useCallback(async () => {
+    if (!validateAddressForm()) {
+      showToast('error', 'Please fix the highlighted fields');
+      return;
+    }
+    const payload = buildAddressPayload();
+    if (user) {
+      try {
+        const res = await createAddressMutation.mutateAsync(payload);
+        showToast('success', 'Address added successfully');
         setAddressModalVisible(false);
-        resetForm();
-        showToast('success', 'Address saved');
+        const newId = (res.data as IAddress | undefined)?._id ?? null;
+        if (newId) setSelectedAddressId(newId);
+      } catch {
+        showToast('error', 'Failed to add address');
       }
-    },
-    [user, createAddressMutation, showToast, resetForm],
-  );
+    } else {
+      setGuestAddress(payload as IAddress);
+      setAddressModalVisible(false);
+      showToast('success', 'Address saved');
+    }
+  }, [addressForm, user, createAddressMutation, showToast]);
 
   const getActiveAddress = useCallback((): IAddress | null => {
     if (user && selectedAddress) return selectedAddress;
-    if (!user && guestAddress) {
-      return {
-        fullName: guestAddress.fullName,
-        phone: guestAddress.phone,
-        addressLine1: guestAddress.addressLine1,
-        addressLine2: guestAddress.addressLine2,
-        city: guestAddress.city,
-        state: guestAddress.state,
-        pincode: guestAddress.pincode,
-        isDefault: true,
-      } as IAddress;
-    }
+    if (!user && guestAddress) return guestAddress;
     return null;
   }, [user, selectedAddress, guestAddress]);
 
@@ -381,8 +440,7 @@ export function CheckoutScreen() {
           theme: { color: '#E8567F' },
         };
 
-        const paymentResponse: RazorpaySuccessResponse =
-          await RazorpayCheckout.open(options);
+        const paymentResponse: RazorpaySuccessResponse = await RazorpayCheckout.open(options);
 
         await verifyPaymentMutation.mutateAsync({
           orderId: order._id,
@@ -401,8 +459,7 @@ export function CheckoutScreen() {
         );
       }
     } catch (error: any) {
-      const message =
-        error?.description ?? error?.message ?? 'Something went wrong';
+      const message = error?.description ?? error?.message ?? 'Something went wrong';
       showToast('error', message);
     } finally {
       setIsPlacingOrder(false);
@@ -448,14 +505,20 @@ export function CheckoutScreen() {
           />
           <View style={styles.cartItemInfo}>
             <Text
-              style={[styles.cartItemName, { color: theme.colors.text, fontSize: theme.fontSizes.sm }]}
+              style={[
+                styles.cartItemName,
+                { color: theme.colors.text, fontSize: theme.fontSizes.sm },
+              ]}
               numberOfLines={2}
             >
               {item.name}
             </Text>
             {item.variant && (
               <Text
-                style={[styles.cartItemVariant, { color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs }]}
+                style={[
+                  styles.cartItemVariant,
+                  { color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs },
+                ]}
               >
                 {item.variant}
               </Text>
@@ -487,18 +550,14 @@ export function CheckoutScreen() {
         ]}
       >
         <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { color: theme.colors.textSecondary }]}>
-            Subtotal
-          </Text>
+          <Text style={[styles.totalLabel, { color: theme.colors.textSecondary }]}>Subtotal</Text>
           <Text style={[styles.totalValue, { color: theme.colors.text }]}>
             {formatCurrency(subtotal)}
           </Text>
         </View>
 
         <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { color: theme.colors.textSecondary }]}>
-            Shipping
-          </Text>
+          <Text style={[styles.totalLabel, { color: theme.colors.textSecondary }]}>Shipping</Text>
           <Text
             style={[
               styles.totalValue,
@@ -527,9 +586,7 @@ export function CheckoutScreen() {
         )}
 
         <View style={[styles.grandTotalRow, { borderTopColor: theme.colors.border }]}>
-          <Text style={[styles.grandTotalLabel, { color: theme.colors.text }]}>
-            Total
-          </Text>
+          <Text style={[styles.grandTotalLabel, { color: theme.colors.text }]}>Total</Text>
           <Text style={[styles.grandTotalValue, { color: theme.colors.primary }]}>
             {formatCurrency(total)}
           </Text>
@@ -548,12 +605,7 @@ export function CheckoutScreen() {
       </Text>
 
       {!user && (
-        <View
-          style={[
-            styles.guestBanner,
-            { backgroundColor: '#FFF8F0', borderColor: '#EBE8D8' },
-          ]}
-        >
+        <View style={[styles.guestBanner, { backgroundColor: '#FFF8F0', borderColor: '#EBE8D8' }]}>
           <Ionicons name="information-circle-outline" size={20} color="#B59F6B" />
           <View style={{ flex: 1 }}>
             <Text style={[styles.guestBannerTitle, { color: theme.colors.text }]}>
@@ -563,12 +615,8 @@ export function CheckoutScreen() {
               You can place your order without an account
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Auth', { screen: 'Login' })}
-          >
-            <Text style={[styles.loginLink, { color: theme.colors.primary }]}>
-              Login
-            </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Login' })}>
+            <Text style={[styles.loginLink, { color: theme.colors.primary }]}>Login</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -577,11 +625,7 @@ export function CheckoutScreen() {
       {user && (
         <>
           {addressesLoading ? (
-            <ActivityIndicator
-              size="small"
-              color={theme.colors.primary}
-              style={styles.loader}
-            />
+            <ActivityIndicator size="small" color={theme.colors.primary} style={styles.loader} />
           ) : addresses.length === 0 ? (
             <View
               style={[
@@ -626,7 +670,9 @@ export function CheckoutScreen() {
                         ]}
                       >
                         {isSelected && (
-                          <View style={[styles.radioInner, { backgroundColor: theme.colors.primary }]} />
+                          <View
+                            style={[styles.radioInner, { backgroundColor: theme.colors.primary }]}
+                          />
                         )}
                       </View>
                       <View style={styles.addressDetails}>
@@ -754,7 +800,10 @@ export function CheckoutScreen() {
               <View
                 style={[
                   styles.radioOuter,
-                  { borderColor: paymentMethod === 'cod' ? theme.colors.primary : theme.colors.border },
+                  {
+                    borderColor:
+                      paymentMethod === 'cod' ? theme.colors.primary : theme.colors.border,
+                  },
                 ]}
               >
                 {paymentMethod === 'cod' && (
@@ -815,9 +864,7 @@ export function CheckoutScreen() {
                 style={styles.paymentIcon}
               />
               <View style={styles.flex}>
-                <Text style={[styles.paymentLabel, { color: theme.colors.text }]}>
-                  Pay Online
-                </Text>
+                <Text style={[styles.paymentLabel, { color: theme.colors.text }]}>Pay Online</Text>
                 <Text style={[styles.paymentHint, { color: theme.colors.textSecondary }]}>
                   UPI, Cards, Wallets & Net Banking
                 </Text>
@@ -855,9 +902,7 @@ export function CheckoutScreen() {
             </Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={[styles.totalLabel, { color: theme.colors.textSecondary }]}>
-              Shipping
-            </Text>
+            <Text style={[styles.totalLabel, { color: theme.colors.textSecondary }]}>Shipping</Text>
             <Text
               style={[
                 styles.totalValue,
@@ -869,18 +914,14 @@ export function CheckoutScreen() {
           </View>
           {discount > 0 && (
             <View style={styles.totalRow}>
-              <Text style={[styles.totalLabel, { color: theme.colors.success }]}>
-                Discount
-              </Text>
+              <Text style={[styles.totalLabel, { color: theme.colors.success }]}>Discount</Text>
               <Text style={[styles.totalValue, { color: theme.colors.success }]}>
                 -{formatCurrency(discount)}
               </Text>
             </View>
           )}
           <View style={[styles.grandTotalRow, { borderTopColor: theme.colors.border }]}>
-            <Text style={[styles.grandTotalLabel, { color: theme.colors.text }]}>
-              Total
-            </Text>
+            <Text style={[styles.grandTotalLabel, { color: theme.colors.text }]}>Total</Text>
             <Text style={[styles.grandTotalValue, { color: theme.colors.primary }]}>
               {formatCurrency(total)}
             </Text>
@@ -926,7 +967,12 @@ export function CheckoutScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Step Indicator */}
-      <View style={[styles.stepBarContainer, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
+      <View
+        style={[
+          styles.stepBarContainer,
+          { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border },
+        ]}
+      >
         <StepIndicator currentStep={currentStep} onStepPress={setCurrentStep} />
       </View>
 
@@ -983,118 +1029,172 @@ export function CheckoutScreen() {
         onClose={() => setAddressModalVisible(false)}
         title="Add Shipping Address"
       >
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <Controller
-            control={control}
-            name="fullName"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Full Name"
-                placeholder="Enter full name"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.fullName?.message}
-                autoCapitalize="words"
-              />
-            )}
-          />
+        <ScrollView
+          style={styles.modalScroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View
+            style={[
+              styles.mapSection,
+              { backgroundColor: COLORS.cream, borderColor: theme.colors.border },
+            ]}
+          >
+            <View style={styles.mapHeader}>
+              <Ionicons name="location-outline" size={16} color={COLORS.rose} />
+              <Text
+                style={[
+                  styles.mapHeaderText,
+                  { color: theme.colors.text, fontFamily: FONTS.body.semiBold },
+                ]}
+              >
+                Pick delivery address
+              </Text>
+            </View>
+            <LocationPicker
+              initialValue={{
+                addressLine1: addressForm.addressLine1,
+                city: addressForm.city,
+                state: addressForm.state,
+                pincode: addressForm.pincode,
+                coordinates: addressForm.coordinates,
+                formattedAddress: addressForm.formattedAddress,
+              }}
+              onChange={onLocationPick}
+            />
+          </View>
 
-          <Controller
-            control={control}
-            name="phone"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Phone Number"
-                placeholder="10-digit mobile number"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.phone?.message}
-                keyboardType="phone-pad"
-                maxLength={10}
-              />
-            )}
+          <Input
+            label="Full Name"
+            placeholder="Enter full name"
+            value={addressForm.fullName}
+            onChangeText={(v) => setAddressField('fullName', v)}
+            error={addressErrors.fullName}
+            autoCapitalize="words"
           />
-
-          <Controller
-            control={control}
-            name="addressLine1"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Address Line 1"
-                placeholder="House no, Building, Street"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.addressLine1?.message}
-              />
-            )}
+          <Input
+            label="Phone Number"
+            placeholder="10-digit mobile number"
+            value={addressForm.phone}
+            onChangeText={(v) => setAddressField('phone', v)}
+            error={addressErrors.phone}
+            keyboardType="phone-pad"
+            maxLength={10}
           />
-
-          <Controller
-            control={control}
-            name="addressLine2"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Address Line 2 (Optional)"
-                placeholder="Area, Landmark"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.addressLine2?.message}
-              />
-            )}
+          <Input
+            label="Address Line 1"
+            placeholder="House no, Building, Street"
+            value={addressForm.addressLine1}
+            onChangeText={(v) => setAddressField('addressLine1', v)}
+            error={addressErrors.addressLine1}
           />
-
-          <Controller
-            control={control}
-            name="city"
-            render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="Address Line 2 (Optional)"
+            placeholder="Area, Landmark"
+            value={addressForm.addressLine2}
+            onChangeText={(v) => setAddressField('addressLine2', v)}
+          />
+          <View style={styles.modalRow}>
+            <View style={styles.modalRowItem}>
               <Input
                 label="City"
-                placeholder="Enter city"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.city?.message}
+                placeholder="City"
+                value={addressForm.city}
+                onChangeText={(v) => setAddressField('city', v)}
+                error={addressErrors.city}
                 autoCapitalize="words"
               />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="state"
-            render={({ field: { onChange, onBlur, value } }) => (
+            </View>
+            <View style={styles.modalRowItem}>
               <Input
                 label="State"
-                placeholder="Enter state"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.state?.message}
+                placeholder="State"
+                value={addressForm.state}
+                onChangeText={(v) => setAddressField('state', v)}
+                error={addressErrors.state}
                 autoCapitalize="words"
               />
-            )}
+            </View>
+          </View>
+          <Input
+            label="Pincode"
+            placeholder="6-digit pincode"
+            value={addressForm.pincode}
+            onChangeText={(v) => setAddressField('pincode', v)}
+            error={addressErrors.pincode}
+            keyboardType="number-pad"
+            maxLength={6}
           />
 
-          <Controller
-            control={control}
-            name="pincode"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label="Pincode"
-                placeholder="6-digit pincode"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.pincode?.message}
-                keyboardType="number-pad"
-                maxLength={6}
-              />
-            )}
-          />
+          <Text
+            style={[styles.chipLabel, { color: theme.colors.text, fontFamily: FONTS.body.medium }]}
+          >
+            Address Type
+          </Text>
+          <View style={styles.chipRow}>
+            {ADDRESS_LABELS.map((l) => {
+              const active = addressForm.label === l.value;
+              return (
+                <TouchableOpacity
+                  key={l.value}
+                  onPress={() => setAddressField('label', l.value)}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.chip,
+                    {
+                      borderColor: active ? COLORS.rose : theme.colors.border,
+                      backgroundColor: active ? COLORS.roseLight : 'transparent',
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={l.icon}
+                    size={14}
+                    color={active ? COLORS.rose : theme.colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.chipText,
+                      {
+                        color: active ? COLORS.rose : theme.colors.textSecondary,
+                        fontFamily: FONTS.body.semiBold,
+                      },
+                    ]}
+                  >
+                    {l.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {user && (
+            <TouchableOpacity
+              onPress={() => setAddressField('isDefault', !addressForm.isDefault)}
+              style={styles.checkboxRow}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: addressForm.isDefault ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: addressForm.isDefault ? theme.colors.primary : 'transparent',
+                  },
+                ]}
+              >
+                {addressForm.isDefault && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+              </View>
+              <Text
+                style={[
+                  styles.checkboxLabel,
+                  { color: theme.colors.text, fontSize: theme.fontSizes.sm },
+                ]}
+              >
+                Set as default address
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.modalButtonRow}>
             <Button
@@ -1102,7 +1202,7 @@ export function CheckoutScreen() {
               size="lg"
               fullWidth
               isLoading={createAddressMutation.isPending}
-              onPress={handleSubmit(handleAddAddress)}
+              onPress={handleSaveAddress}
             >
               Save Address
             </Button>
@@ -1368,4 +1468,43 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
+  modalScroll: { maxHeight: 620 },
+  mapSection: {
+    marginBottom: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  mapHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  mapHeaderText: { fontSize: 13, letterSpacing: 0.2 },
+  modalRow: { flexDirection: 'row', gap: 12 },
+  modalRowItem: { flex: 1 },
+  chipLabel: { fontSize: 13, marginBottom: 8, marginTop: 2 },
+  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  chipText: { fontSize: 12 },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxLabel: { fontWeight: '500' },
 });
