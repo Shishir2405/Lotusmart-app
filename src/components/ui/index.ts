@@ -6,4 +6,5 @@ export { Skeleton } from './Skeleton';
 export { Modal } from './Modal';
 export { PermissionModal } from './PermissionModal';
 export type { PermissionModalProps } from './PermissionModal';
+export { GoogleSignInButton } from './GoogleSignInButton';
 export { ToastProvider, useToast } from './Toast';
