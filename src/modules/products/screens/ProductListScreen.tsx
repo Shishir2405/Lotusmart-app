@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,51 +6,68 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  Modal,
-  SafeAreaView,
+  RefreshControl,
 } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../theme/ThemeContext';
 import { useProducts, useCategories } from '../hooks';
 import { ProductCard } from '../components/ProductCard';
+import { ProductRow } from '../components/ProductRow';
 import { CategoryChip } from '../components/CategoryChip';
 import { ProductListSkeleton } from '../components/ProductListSkeleton';
-import { IProduct } from '../../../types';
+import { FilterDrawer, DEFAULT_FILTERS, FilterState } from '../components/FilterDrawer';
+import { IProduct, IProductFilters } from '../../../types';
 import { ProductStackParamList } from '../types';
 import { useLoadingCap } from '../../../hooks/useLoadingCap';
+import { FONTS } from '../../../config/fonts';
+import { COLORS } from '../../../config/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 
 type RouteProps = RouteProp<ProductStackParamList, 'ProductList'>;
+type ViewMode = 'grid' | 'list';
 
-const SORT_OPTIONS = [
-  { label: 'Newest', value: '-createdAt' },
-  { label: 'Price: Low to High', value: 'price' },
-  { label: 'Price: High to Low', value: '-price' },
-  { label: 'Rating', value: '-ratings.average' },
-] as const;
+function countActiveFilters(f: FilterState) {
+  return (
+    (f.sortBy !== 'newest' ? 1 : 0) +
+    (f.minPrice ? 1 : 0) +
+    (f.maxPrice ? 1 : 0) +
+    (f.isOrganic ? 1 : 0) +
+    (f.isVegan ? 1 : 0) +
+    (f.isGlutenFree ? 1 : 0) +
+    (f.inStock ? 1 : 0)
+  );
+}
 
 export function ProductListScreen() {
   const { theme } = useTheme();
   const route = useRoute<RouteProps>();
-  const { category: routeCategory, search, title } = route.params ?? {};
+  const { category: routeCategory, search } = route.params ?? {};
 
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(routeCategory);
-  const [sort, setSort] = useState<string>('-createdAt');
   const [page, setPage] = useState(1);
-  const [showSortModal, setShowSortModal] = useState(false);
+  const [filterState, setFilterState] = useState<FilterState>(DEFAULT_FILTERS);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [refreshing, setRefreshing] = useState(false);
 
-  const filters = useMemo(
+  const filters = useMemo<IProductFilters>(
     () => ({
       category: selectedCategory,
       search,
-      sort,
+      sortBy: filterState.sortBy,
+      minPrice: filterState.minPrice,
+      maxPrice: filterState.maxPrice,
+      isOrganic: filterState.isOrganic || undefined,
+      isVegan: filterState.isVegan || undefined,
+      isGlutenFree: filterState.isGlutenFree || undefined,
+      inStock: filterState.inStock || undefined,
       page,
       limit: 20,
     }),
-    [selectedCategory, search, sort, page],
+    [selectedCategory, search, filterState, page],
   );
 
   const { data: productsRes, isLoading, refetch, isFetching } = useProducts(filters);
@@ -62,21 +79,20 @@ export function ProductListScreen() {
   const pagination = productsRes?.pagination;
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
 
+  const activeFilters = useMemo(() => countActiveFilters(filterState), [filterState]);
+
   const handleCategorySelect = useCallback((categoryId?: string) => {
     setSelectedCategory(categoryId);
     setPage(1);
   }, []);
 
-  const handleSortSelect = useCallback((value: string) => {
-    setSort(value);
+  const handleApplyFilters = useCallback((next: FilterState) => {
+    setFilterState(next);
     setPage(1);
-    setShowSortModal(false);
   }, []);
 
   const handleEndReached = useCallback(() => {
-    if (hasMore && !isFetching) {
-      setPage((prev) => prev + 1);
-    }
+    if (hasMore && !isFetching) setPage((p) => p + 1);
   }, [hasMore, isFetching]);
 
   const handleRefresh = useCallback(async () => {
@@ -86,9 +102,7 @@ export function ProductListScreen() {
     setRefreshing(false);
   }, [refetch]);
 
-  const selectedSortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Sort';
-
-  const renderItem = useCallback(
+  const renderGridItem = useCallback(
     ({ item }: { item: IProduct }) => (
       <View style={{ width: CARD_WIDTH }}>
         <ProductCard product={item} />
@@ -97,33 +111,49 @@ export function ProductListScreen() {
     [],
   );
 
+  const renderListItem = useCallback(
+    ({ item }: { item: IProduct }) => (
+      <View style={{ marginBottom: 12 }}>
+        <ProductRow product={item} />
+      </View>
+    ),
+    [],
+  );
+
   const renderEmpty = useCallback(() => {
-    if (isLoading) return null;
+    if (showSkeleton) return null;
     return (
       <View style={styles.emptyContainer}>
-        <Text style={{ fontSize: 48, marginBottom: 12 }}>{'\uD83D\uDD0D'}</Text>
+        <View style={[styles.emptyIcon, { backgroundColor: COLORS.oliveLight }]}>
+          <Ionicons name="search-outline" size={28} color={COLORS.olive} />
+        </View>
         <Text
-          style={[styles.emptyTitle, { color: theme.colors.text, fontSize: theme.fontSizes.lg }]}
+          style={[styles.emptyTitle, { color: theme.colors.text, fontFamily: FONTS.heading.bold }]}
         >
           No products found
         </Text>
         <Text
           style={[
             styles.emptySubtitle,
-            { color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm },
+            { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
           ]}
         >
-          Try adjusting your filters or search terms
+          Try adjusting your filters or search terms.
         </Text>
       </View>
     );
-  }, [isLoading, theme]);
+  }, [showSkeleton, theme]);
 
   const renderFooter = useCallback(() => {
     if (!isFetching || isLoading) return null;
     return (
       <View style={styles.footer}>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }}>
+        <Text
+          style={[
+            styles.footerText,
+            { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
+          ]}
+        >
           Loading more...
         </Text>
       </View>
@@ -132,7 +162,6 @@ export function ProductListScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Category Chips */}
       {!search && categories.length > 0 && (
         <CategoryChip
           categories={categories}
@@ -141,196 +170,200 @@ export function ProductListScreen() {
         />
       )}
 
-      {/* Sort Bar */}
-      <View style={[styles.sortBar, { paddingHorizontal: theme.spacing.lg }]}>
+      <View style={styles.toolbar}>
         <Text
           style={[
-            styles.resultCount,
-            { color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm },
+            styles.count,
+            { color: theme.colors.textSecondary, fontFamily: FONTS.body.medium },
           ]}
         >
-          {pagination ? `${pagination.total} products` : ''}
+          {pagination ? `${pagination.total} products` : ' '}
         </Text>
-        <TouchableOpacity
-          style={[
-            styles.sortButton,
-            {
-              borderColor: theme.colors.border,
-              borderRadius: theme.borderRadius.sm,
-              paddingHorizontal: theme.spacing.md,
-              paddingVertical: theme.spacing.xs,
-            },
-          ]}
-          onPress={() => setShowSortModal(true)}
-        >
-          <Text style={{ fontSize: 14, marginRight: 4 }}>{'\u2195'}</Text>
-          <Text
+
+        <View style={styles.toolbarActions}>
+          <View
             style={[
-              styles.sortButtonText,
-              { color: theme.colors.text, fontSize: theme.fontSizes.sm },
+              styles.segmented,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
             ]}
           >
-            {selectedSortLabel}
-          </Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setViewMode('grid')}
+              style={[styles.segment, viewMode === 'grid' && { backgroundColor: COLORS.rose }]}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons
+                name="grid"
+                size={13}
+                color={viewMode === 'grid' ? '#FFFFFF' : theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setViewMode('list')}
+              style={[styles.segment, viewMode === 'list' && { backgroundColor: COLORS.rose }]}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons
+                name="list"
+                size={15}
+                color={viewMode === 'list' ? '#FFFFFF' : theme.colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setDrawerOpen(true)}
+            style={[
+              styles.filterBtn,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            ]}
+          >
+            <Ionicons name="options-outline" size={14} color={theme.colors.text} />
+            <Text
+              style={[
+                styles.filterBtnText,
+                { color: theme.colors.text, fontFamily: FONTS.body.semiBold },
+              ]}
+            >
+              Filters
+            </Text>
+            {activeFilters > 0 ? (
+              <View style={[styles.filterBadge, { backgroundColor: COLORS.rose }]}>
+                <Text style={styles.filterBadgeText}>{activeFilters}</Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Product Grid */}
       {showSkeleton && page === 1 ? (
         <ProductListSkeleton count={6} />
-      ) : (
+      ) : viewMode === 'grid' ? (
         <FlatList
+          key="grid"
           data={products}
-          renderItem={renderItem}
+          renderItem={renderGridItem}
           keyExtractor={(item) => item._id}
           numColumns={2}
           columnWrapperStyle={styles.row}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+          contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.rose}
+            />
+          }
+          ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+        />
+      ) : (
+        <FlatList
+          key="list"
+          data={products}
+          renderItem={renderListItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.3}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.rose}
+            />
+          }
           ListEmptyComponent={renderEmpty}
           ListFooterComponent={renderFooter}
         />
       )}
 
-      {/* Sort Modal */}
-      <Modal visible={showSortModal} transparent animationType="fade">
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSortModal(false)}
-        >
-          <SafeAreaView>
-            <View
-              style={[
-                styles.sortModal,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderRadius: theme.borderRadius.lg,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.sortModalTitle,
-                  { color: theme.colors.text, fontSize: theme.fontSizes.lg },
-                ]}
-              >
-                Sort By
-              </Text>
-              {SORT_OPTIONS.map((option) => {
-                const isActive = sort === option.value;
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.sortOption,
-                      {
-                        backgroundColor: isActive ? theme.colors.primary + '14' : 'transparent',
-                        borderRadius: theme.borderRadius.sm,
-                      },
-                    ]}
-                    onPress={() => handleSortSelect(option.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.sortOptionText,
-                        {
-                          color: isActive ? theme.colors.primary : theme.colors.text,
-                          fontSize: theme.fontSizes.base,
-                        },
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                    {isActive && (
-                      <Text style={{ color: theme.colors.primary, fontSize: 16 }}>{'\u2713'}</Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </SafeAreaView>
-        </TouchableOpacity>
-      </Modal>
+      <FilterDrawer
+        visible={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        value={filterState}
+        onApply={handleApplyFilters}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  sortBar: {
+  container: { flex: 1 },
+  toolbar: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
-  resultCount: {
-    fontWeight: '500',
-  },
-  sortButton: {
+  count: { fontSize: 13 },
+  toolbarActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  segmented: {
     flexDirection: 'row',
-    alignItems: 'center',
     borderWidth: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-  sortButtonText: {
-    fontWeight: '500',
+  segment: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 34,
   },
-  row: {
-    justifyContent: 'space-between',
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
+  filterBtnText: { fontSize: 12, letterSpacing: 0.2 },
+  filterBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  filterBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: FONTS.body.bold,
+  },
+  row: { justifyContent: 'space-between' },
+  gridContent: { paddingHorizontal: 16, paddingBottom: 24 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 24 },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 80,
+    paddingTop: 60,
     paddingHorizontal: 32,
+    gap: 10,
   },
-  emptyTitle: {
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  footer: {
-    paddingVertical: 20,
+  emptyIcon: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  sortModal: {
-    marginHorizontal: 16,
-    marginBottom: 24,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  sortModalTitle: {
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  sortOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 4,
-  },
-  sortOptionText: {
-    fontWeight: '500',
-  },
+  emptyTitle: { fontSize: 16 },
+  emptySubtitle: { fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  footer: { paddingVertical: 18, alignItems: 'center' },
+  footerText: { fontSize: 12 },
 });

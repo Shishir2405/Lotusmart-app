@@ -12,6 +12,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeScreen } from '../../modules/products/screens/HomeScreen';
 import { ProductListScreen } from '../../modules/products/screens/ProductListScreen';
+import CategoriesScreen from '../../modules/products/screens/CategoriesScreen';
 import CartScreen from '../../modules/cart/screens/CartScreen';
 import OrdersScreen from '../../modules/orders/screens/OrdersScreen';
 import ProfileScreen from '../../modules/users/screens/ProfileScreen';
@@ -290,7 +291,7 @@ export function MainTabNavigator() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} />
-      <Tab.Screen name="CategoriesTab" component={ProductListScreen} />
+      <Tab.Screen name="CategoriesTab" component={CategoriesScreen} />
       <Tab.Screen name="CartTab" component={CartScreen} />
       <Tab.Screen name="OrdersTab" component={user ? OrdersScreen : LoginPromptScreen} />
       <Tab.Screen name="ProfileTab" component={user ? ProfileScreen : LoginPromptScreen} />
