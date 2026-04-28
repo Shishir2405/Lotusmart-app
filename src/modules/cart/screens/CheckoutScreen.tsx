@@ -213,7 +213,7 @@ export function CheckoutScreen() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
@@ -367,9 +367,8 @@ export function CheckoutScreen() {
       return;
     }
 
-    // If guest user, prompt to login for online payment
-    if (!user && paymentMethod === 'razorpay') {
-      showToast('error', 'Please login to pay online. Guest checkout supports COD only.');
+    if (!user) {
+      showToast('error', 'Please login to place an order.');
       return;
     }
 
@@ -385,83 +384,68 @@ export function CheckoutScreen() {
         variant: item.variant,
       }));
 
-      if (paymentMethod === 'cod') {
-        await createOrderMutation.mutateAsync({
-          items: orderItems,
-          shippingAddress: address,
-          paymentMethod: 'cod',
-          couponCode: couponCode ?? undefined,
-        });
+      const orderRes = await createOrderMutation.mutateAsync({
+        items: orderItems,
+        shippingAddress: address,
+        paymentMethod: 'razorpay',
+        couponCode: couponCode ?? undefined,
+      });
 
-        clearCart();
-        showToast('success', 'Order placed successfully!');
-
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Main' }],
-          }),
-        );
-      } else {
-        // Razorpay flow (logged-in users only)
-        const orderRes = await createOrderMutation.mutateAsync({
-          items: orderItems,
-          shippingAddress: address,
-          paymentMethod: 'razorpay',
-          couponCode: couponCode ?? undefined,
-        });
-
-        const order = orderRes.data;
-        if (!order) {
-          showToast('error', 'Failed to create order');
-          return;
-        }
-
-        const razorpayRes = await createRazorpayOrderMutation.mutateAsync({
-          amount: order.total,
-          internalOrderId: order._id,
-        });
-
-        const razorpayData = razorpayRes.data;
-        if (!razorpayData) {
-          showToast('error', 'Failed to initiate payment');
-          return;
-        }
-
-        const options = {
-          key: RAZORPAY_KEY,
-          amount: razorpayData.amount,
-          currency: razorpayData.currency,
-          name: 'LotusMart',
-          description: `Order #${order.orderNumber}`,
-          order_id: razorpayData.razorpayOrderId,
-          prefill: {
-            name: user?.name ?? '',
-            email: user?.email ?? '',
-            contact: user?.phone ?? '',
-          },
-          theme: { color: '#E8567F' },
-        };
-
-        const paymentResponse: RazorpaySuccessResponse = await RazorpayCheckout.open(options);
-
-        await verifyPaymentMutation.mutateAsync({
-          internalOrderId: order._id,
-          razorpayOrderId: razorpayData.razorpayOrderId,
-          razorpayPaymentId: paymentResponse.razorpay_payment_id,
-          razorpaySignature: paymentResponse.razorpay_signature,
-        });
-
-        clearCart();
-        showToast('success', 'Payment successful! Order placed.');
-
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Main' }],
-          }),
-        );
+      const order = orderRes.data;
+      if (!order) {
+        showToast('error', 'Failed to create order');
+        return;
       }
+
+      const razorpayRes = await createRazorpayOrderMutation.mutateAsync({
+        amount: order.total,
+        internalOrderId: order._id,
+      });
+
+      const razorpayData = razorpayRes.data;
+      if (!razorpayData) {
+        showToast('error', 'Failed to initiate payment');
+        return;
+      }
+
+      const options = {
+        key: RAZORPAY_KEY,
+        amount: razorpayData.amount,
+        currency: razorpayData.currency,
+        name: 'LotusMart',
+        description: `Order #${order.orderNumber}`,
+        order_id: razorpayData.razorpayOrderId,
+        prefill: {
+          name: user?.name ?? '',
+          email: user?.email ?? '',
+          contact: user?.phone ?? '',
+        },
+        theme: { color: '#E8567F' },
+      };
+
+      if (!RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
+        showToast('error', 'Online payment is not available in Expo Go. Please use a dev build.');
+        return;
+      }
+
+      const paymentResponse: RazorpaySuccessResponse = await RazorpayCheckout.open(options);
+
+      await verifyPaymentMutation.mutateAsync({
+        internalOrderId: order._id,
+        razorpayOrderId: razorpayData.razorpayOrderId,
+        razorpayPaymentId: paymentResponse.razorpay_payment_id,
+        razorpaySignature: paymentResponse.razorpay_signature,
+      });
+
+      clearCart();
+      showToast('success', 'Payment successful! Order placed.');
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        }),
+      );
     } catch (error: any) {
       if (__DEV__) {
         console.warn(
@@ -814,50 +798,6 @@ export function CheckoutScreen() {
           Payment Method
         </Text>
 
-        <TouchableOpacity activeOpacity={0.7} onPress={() => setPaymentMethod('cod')}>
-          <View
-            style={[
-              styles.paymentCard,
-              {
-                backgroundColor: theme.colors.surface,
-                borderRadius: theme.borderRadius.md,
-                borderColor: paymentMethod === 'cod' ? theme.colors.primary : theme.colors.border,
-                borderWidth: paymentMethod === 'cod' ? 2 : 1,
-              },
-            ]}
-          >
-            <View style={styles.radioRow}>
-              <View
-                style={[
-                  styles.radioOuter,
-                  {
-                    borderColor:
-                      paymentMethod === 'cod' ? theme.colors.primary : theme.colors.border,
-                  },
-                ]}
-              >
-                {paymentMethod === 'cod' && (
-                  <View style={[styles.radioInner, { backgroundColor: theme.colors.primary }]} />
-                )}
-              </View>
-              <Ionicons
-                name="cash-outline"
-                size={24}
-                color={paymentMethod === 'cod' ? theme.colors.primary : theme.colors.textSecondary}
-                style={styles.paymentIcon}
-              />
-              <View style={styles.flex}>
-                <Text style={[styles.paymentLabel, { color: theme.colors.text }]}>
-                  Cash on Delivery
-                </Text>
-                <Text style={[styles.paymentHint, { color: theme.colors.textSecondary }]}>
-                  Pay when your order arrives
-                </Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-
         <TouchableOpacity activeOpacity={0.7} onPress={() => setPaymentMethod('razorpay')}>
           <View
             style={[
@@ -978,9 +918,7 @@ export function CheckoutScreen() {
     if (currentStep < 2) {
       return 'Continue';
     }
-    return paymentMethod === 'cod'
-      ? `Place Order \u2013 ${formatCurrency(total)}`
-      : `Pay ${formatCurrency(total)}`;
+    return `Pay ${formatCurrency(total)}`;
   };
 
   const handleBottomPress = () => {

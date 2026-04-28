@@ -10,7 +10,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region, MapPressEvent } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE, Region, MapPressEvent } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
@@ -48,6 +48,12 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   const mapRef = useRef<MapView | null>(null);
   const sessionTokenRef = useRef<string>(randomSessionToken());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const regionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastResolvedRef = useRef<{ lat: number; lng: number } | null>(
+    initialValue?.coordinates ?? null,
+  );
+  const autoDetectedRef = useRef(false);
+  const suppressRegionChangeRef = useRef(false);
 
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
@@ -56,7 +62,7 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   const [detectingGps, setDetectingGps] = useState(false);
   const [permissionModal, setPermissionModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(
+  const [center, setCenter] = useState<{ lat: number; lng: number } | null>(
     initialValue?.coordinates ?? null,
   );
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(
@@ -67,12 +73,16 @@ export function LocationPicker({ initialValue, onChange }: Props) {
     (value: LocationPickerValue) => {
       onChange(value);
       if (value.formattedAddress) setResolvedAddress(value.formattedAddress);
-      if (value.coordinates) setMarker(value.coordinates);
+      if (value.coordinates) {
+        setCenter(value.coordinates);
+        lastResolvedRef.current = value.coordinates;
+      }
     },
     [onChange],
   );
 
   const animateTo = useCallback((lat: number, lng: number) => {
+    suppressRegionChangeRef.current = true;
     mapRef.current?.animateToRegion(
       { latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
       400,
@@ -99,6 +109,7 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (regionDebounceRef.current) clearTimeout(regionDebounceRef.current);
     };
   }, []);
 
@@ -179,6 +190,44 @@ export function LocationPicker({ initialValue, onChange }: Props) {
     animateTo(latitude, longitude);
     void resolveAndEmit(latitude, longitude);
   };
+
+  const onRegionChangeComplete = useCallback(
+    (region: Region) => {
+      if (suppressRegionChangeRef.current) {
+        suppressRegionChangeRef.current = false;
+        setCenter({ lat: region.latitude, lng: region.longitude });
+        return;
+      }
+      const lat = region.latitude;
+      const lng = region.longitude;
+      setCenter({ lat, lng });
+      const last = lastResolvedRef.current;
+      if (last && Math.abs(last.lat - lat) < 1e-5 && Math.abs(last.lng - lng) < 1e-5) {
+        return;
+      }
+      if (regionDebounceRef.current) clearTimeout(regionDebounceRef.current);
+      regionDebounceRef.current = setTimeout(() => {
+        void resolveAndEmit(lat, lng);
+      }, 350);
+    },
+    [resolveAndEmit],
+  );
+
+  // Zomato-style: auto-detect on first mount when no initial value.
+  useEffect(() => {
+    if (autoDetectedRef.current) return;
+    if (initialValue?.coordinates) return;
+    autoDetectedRef.current = true;
+    (async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        void runGps();
+      } else {
+        setPermissionModal(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const initialRegion: Region = useMemo(() => {
     if (initialValue?.coordinates) {
@@ -312,41 +361,54 @@ export function LocationPicker({ initialValue, onChange }: Props) {
           style={StyleSheet.absoluteFillObject}
           initialRegion={initialRegion}
           onPress={onMapPress}
-          showsUserLocation={false}
+          onRegionChangeComplete={onRegionChangeComplete}
+          showsUserLocation
           showsMyLocationButton={false}
           toolbarEnabled={false}
+        />
+
+        {/* Center pin overlay — stays locked to viewport center, Zomato-style */}
+        <View pointerEvents="none" style={styles.centerPinWrap}>
+          <View style={[styles.centerPinBubble, { backgroundColor: COLORS.rose }]}>
+            <Ionicons name="location" size={18} color="#fff" />
+          </View>
+          <View style={[styles.centerPinStem, { backgroundColor: COLORS.rose }]} />
+          <View style={styles.centerPinShadow} />
+        </View>
+
+        {/* Floating "locate me" chip top-right */}
+        <TouchableOpacity
+          onPress={requestGps}
+          disabled={detectingGps}
+          activeOpacity={0.85}
+          style={[styles.locateChip, { backgroundColor: '#fff' }]}
         >
-          {marker && (
-            <Marker
-              coordinate={{ latitude: marker.lat, longitude: marker.lng }}
-              draggable
-              onDragEnd={(e) => {
-                const { latitude, longitude } = e.nativeEvent.coordinate;
-                void resolveAndEmit(latitude, longitude);
-              }}
-              pinColor={COLORS.rose}
-            />
+          {detectingGps ? (
+            <ActivityIndicator size="small" color={COLORS.rose} />
+          ) : (
+            <Ionicons name="locate" size={18} color={COLORS.rose} />
           )}
-        </MapView>
+        </TouchableOpacity>
+
         {resolving && (
           <View style={styles.mapOverlay}>
             <ActivityIndicator size="small" color={COLORS.rose} />
             <Text style={[styles.overlayText, { fontFamily: FONTS.body.medium }]}>
-              Resolving address...
+              Locating address...
             </Text>
           </View>
         )}
       </View>
 
       <View style={styles.hintRow}>
-        <Ionicons name="information-circle-outline" size={13} color={theme.colors.textSecondary} />
+        <Ionicons name="move-outline" size={13} color={theme.colors.textSecondary} />
         <Text
           style={[
             styles.hintText,
             { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
           ]}
         >
-          Tap the map or drag the pin to fine-tune.
+          Move the map to position the pin on your exact doorstep.
         </Text>
       </View>
 
@@ -450,11 +512,60 @@ const styles = StyleSheet.create({
   },
   gpsBtnText: { fontSize: 13, color: COLORS.rose, letterSpacing: 0.2 },
   mapWrap: {
-    height: 220,
+    height: 320,
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
     backgroundColor: '#EEE',
+    position: 'relative',
+  },
+  centerPinWrap: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -18,
+    marginTop: -42,
+    alignItems: 'center',
+    width: 36,
+  },
+  centerPinBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  centerPinStem: {
+    width: 2,
+    height: 8,
+    marginTop: -1,
+  },
+  centerPinShadow: {
+    width: 12,
+    height: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    marginTop: 1,
+  },
+  locateChip: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 4,
   },
   mapOverlay: {
     position: 'absolute',

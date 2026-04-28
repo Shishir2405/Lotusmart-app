@@ -1,5 +1,3 @@
-import { FREE_SHIPPING_THRESHOLD, DEFAULT_SHIPPING_COST } from '../config/constants';
-
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -22,8 +20,9 @@ export function getDiscountPercentage(price: number, compareAtPrice?: number): n
   return Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
 }
 
-export function getShippingCost(subtotal: number): number {
-  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : DEFAULT_SHIPPING_COST;
+export function getShippingCost(_subtotal: number): number {
+  // Free shipping on all prepaid orders (only payment mode supported).
+  return 0;
 }
 
 export function truncateText(text: string, maxLength: number): string {
