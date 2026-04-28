@@ -13,6 +13,7 @@ import {
   createAddress,
   updateAddress,
   deleteAddress,
+  deleteAccount,
   RegisterPayload,
   CompleteProfilePayload,
   UpdateProfilePayload,
@@ -140,6 +141,27 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
+      await authStore.logout();
+    },
+    onSuccess: () => {
+      cartStore.clearCart();
+      wishlistStore.clearWishlist();
+      queryClient.clear();
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  const authStore = useAuthStore();
+  const cartStore = useCartStore();
+  const wishlistStore = useWishlistStore();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (reason?: string) => {
+      await deleteAccount(reason);
+      // Server clears the auth cookie; mobile app uses bearer token, so we
+      // must wipe local credentials and reset state ourselves.
       await authStore.logout();
     },
     onSuccess: () => {

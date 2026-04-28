@@ -126,3 +126,10 @@ export const deleteAddress = async (id: string): Promise<IApiResponse<void>> => 
   const response = await api.delete(`/auth/addresses/${id}`);
   return response.data;
 };
+
+export const deleteAccount = async (reason?: string): Promise<IApiResponse<null>> => {
+  const response = await api.delete('/auth/me', {
+    data: reason ? { reason } : {},
+  });
+  return response.data;
+};

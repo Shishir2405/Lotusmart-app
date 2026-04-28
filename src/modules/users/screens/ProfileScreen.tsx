@@ -1,5 +1,16 @@
-import React, { useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Image,
+  Modal as RNModal,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -9,7 +20,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Button } from '../../../components/ui';
 import { useAuthStore } from '../../../store/auth.store';
-import { useLogout } from '../../auth/hooks';
+import { useDeleteAccount, useLogout } from '../../auth/hooks';
+import { useToast } from '../../../components/ui/Toast';
 import { ProfileStackParamList } from '../types';
 import { FONTS } from '../../../config/fonts';
 import { COLORS } from '../../../config/constants';
@@ -29,6 +41,11 @@ export default function ProfileScreen() {
   const navigation = useNavigation<ProfileNavProp>();
   const { user } = useAuthStore();
   const logoutMutation = useLogout();
+  const deleteAccountMutation = useDeleteAccount();
+  const { showToast } = useToast();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
 
   const handleLogout = useCallback(() => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -36,6 +53,25 @@ export default function ProfileScreen() {
       { text: 'Logout', style: 'destructive', onPress: () => logoutMutation.mutate() },
     ]);
   }, [logoutMutation]);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (deleteConfirm.trim().toUpperCase() !== 'DELETE') {
+      showToast('error', 'Type DELETE to confirm');
+      return;
+    }
+    deleteAccountMutation.mutate(deleteReason.trim() || undefined, {
+      onSuccess: () => {
+        setDeleteOpen(false);
+        setDeleteConfirm('');
+        setDeleteReason('');
+        showToast('success', 'Your account has been deleted');
+      },
+      onError: (err: unknown) => {
+        const e = err as { response?: { data?: { message?: string } } };
+        showToast('error', e?.response?.data?.message ?? 'Failed to delete account');
+      },
+    });
+  }, [deleteConfirm, deleteReason, deleteAccountMutation, showToast]);
 
   const handleLogin = useCallback(() => {
     (navigation as NativeStackNavigationProp<Record<string, object | undefined>>).navigate('Auth', {
@@ -322,6 +358,26 @@ export default function ProfileScreen() {
                 Logout
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setDeleteOpen(true);
+                setDeleteConfirm('');
+                setDeleteReason('');
+              }}
+              activeOpacity={0.7}
+              style={[styles.deleteBtn, { borderColor: theme.colors.error + '60' }]}
+            >
+              <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
+              <Text
+                style={[
+                  styles.deleteText,
+                  { color: theme.colors.error, fontFamily: FONTS.body.semiBold },
+                ]}
+              >
+                Delete my account
+              </Text>
+            </TouchableOpacity>
           </Animated.View>
         )}
 
@@ -355,6 +411,103 @@ export default function ProfileScreen() {
           LotusMart v1.0.0
         </Text>
       </ScrollView>
+
+      <RNModal
+        visible={deleteOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !deleteAccountMutation.isPending && setDeleteOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconWrap, { backgroundColor: theme.colors.error + '18' }]}>
+                <Ionicons name="warning-outline" size={20} color={theme.colors.error} />
+              </View>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+                Delete your account?
+              </Text>
+            </View>
+            <Text style={[styles.modalBody, { color: theme.colors.textSecondary }]}>
+              We&apos;ll mark your account deleted and remove your profile data. Past orders are
+              kept for accounting only. To restore, contact support within 30 days.
+            </Text>
+
+            <Text style={[styles.modalFieldLabel, { color: theme.colors.textSecondary }]}>
+              Reason (optional)
+            </Text>
+            <TextInput
+              value={deleteReason}
+              onChangeText={setDeleteReason}
+              placeholder="Help us improve — why are you leaving?"
+              placeholderTextColor={theme.colors.textSecondary}
+              multiline
+              maxLength={500}
+              style={[
+                styles.modalInput,
+                {
+                  borderColor: theme.colors.border,
+                  color: theme.colors.text,
+                  minHeight: 60,
+                  textAlignVertical: 'top',
+                },
+              ]}
+            />
+
+            <Text style={[styles.modalFieldLabel, { color: theme.colors.textSecondary }]}>
+              Type{' '}
+              <Text style={{ color: theme.colors.error, fontFamily: FONTS.body.bold }}>DELETE</Text>{' '}
+              to confirm
+            </Text>
+            <TextInput
+              value={deleteConfirm}
+              onChangeText={setDeleteConfirm}
+              placeholder="DELETE"
+              placeholderTextColor={theme.colors.textSecondary}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              style={[
+                styles.modalInput,
+                { borderColor: theme.colors.border, color: theme.colors.text },
+              ]}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                disabled={deleteAccountMutation.isPending}
+                onPress={() => setDeleteOpen(false)}
+                style={[styles.modalBtn, { borderColor: theme.colors.border }]}
+              >
+                <Text style={[styles.modalBtnText, { color: theme.colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={
+                  deleteAccountMutation.isPending || deleteConfirm.trim().toUpperCase() !== 'DELETE'
+                }
+                onPress={handleConfirmDelete}
+                style={[
+                  styles.modalBtn,
+                  {
+                    backgroundColor: theme.colors.error,
+                    borderColor: theme.colors.error,
+                    opacity:
+                      deleteAccountMutation.isPending ||
+                      deleteConfirm.trim().toUpperCase() !== 'DELETE'
+                        ? 0.5
+                        : 1,
+                  },
+                ]}
+              >
+                {deleteAccountMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.modalBtnText, { color: '#fff' }]}>Delete account</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </RNModal>
     </SafeAreaView>
   );
 }
@@ -430,5 +583,81 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   logoutText: { fontSize: 15 },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginTop: 10,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+  },
+  deleteText: { fontSize: 13 },
   version: { textAlign: 'center', marginTop: 32, fontSize: 12 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    borderRadius: 18,
+    padding: 22,
+    gap: 4,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  modalIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalTitle: { fontFamily: FONTS.body.bold, fontSize: 16, flex: 1 },
+  modalBody: {
+    fontFamily: FONTS.body.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  modalFieldLabel: {
+    fontFamily: FONTS.body.medium,
+    fontSize: 11,
+    marginBottom: 6,
+    marginTop: 6,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: FONTS.body.regular,
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+    justifyContent: 'flex-end',
+  },
+  modalBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    minWidth: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnText: { fontFamily: FONTS.body.semiBold, fontSize: 13 },
 });
