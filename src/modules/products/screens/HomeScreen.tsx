@@ -10,7 +10,6 @@ import {
   StyleSheet,
   RefreshControl,
   Dimensions,
-  TextInput,
   Animated,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -847,121 +846,6 @@ const faqStyles = StyleSheet.create({
   },
 });
 
-// ====== NEWSLETTER SECTION ======
-
-function NewsletterSection() {
-  const { theme } = useTheme();
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = () => {
-    if (email.includes('@')) {
-      setSubscribed(true);
-      setEmail('');
-    }
-  };
-
-  return (
-    <LinearGradient colors={['#5C6B3C', '#3E4A28']} style={nlStyles.container}>
-      <Text style={nlStyles.heading}>Stay Updated</Text>
-      <Text style={nlStyles.subtext}>
-        Subscribe to get exclusive offers, new product launches & seasonal deals.
-      </Text>
-
-      {subscribed ? (
-        <View style={nlStyles.successRow}>
-          <Ionicons name="checkmark-circle" size={24} color="#B59F6B" />
-          <Text style={nlStyles.successText}>Thank you for subscribing!</Text>
-        </View>
-      ) : (
-        <View style={nlStyles.inputRow}>
-          <TextInput
-            style={nlStyles.input}
-            placeholder="Enter your email"
-            placeholderTextColor="rgba(255,255,255,0.5)"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <TouchableOpacity style={nlStyles.button} onPress={handleSubscribe} activeOpacity={0.8}>
-            <Text style={nlStyles.buttonText}>Subscribe</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <Text style={nlStyles.privacy}>No spam, unsubscribe anytime.</Text>
-    </LinearGradient>
-  );
-}
-
-const nlStyles = StyleSheet.create({
-  container: {
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-  },
-  heading: {
-    fontFamily: FONTS.heading.bold,
-    fontSize: 22,
-    color: '#FFFFFF',
-    marginBottom: 6,
-  },
-  subtext: {
-    fontFamily: FONTS.body.regular,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    fontFamily: FONTS.body.regular,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: '#FFFFFF',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  button: {
-    backgroundColor: '#B59F6B',
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontFamily: FONTS.body.bold,
-    color: '#FFFFFF',
-    fontSize: 13,
-  },
-  successRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  successText: {
-    fontFamily: FONTS.body.semiBold,
-    color: '#B59F6B',
-    fontSize: 15,
-  },
-  privacy: {
-    fontFamily: FONTS.body.regular,
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 11,
-    marginTop: 10,
-  },
-});
-
 // ====== MAIN HOME SCREEN ======
 
 export function HomeScreen() {
@@ -1134,11 +1018,6 @@ export function HomeScreen() {
         {/* FAQ Section */}
         <View style={{ marginTop: 32 }}>
           <FAQSection faqs={dynamicFAQs} onViewAll={() => navigation.navigate('FAQ' as any)} />
-        </View>
-
-        {/* Newsletter */}
-        <View style={{ marginTop: 32 }}>
-          <NewsletterSection />
         </View>
 
         {/* Footer Links */}

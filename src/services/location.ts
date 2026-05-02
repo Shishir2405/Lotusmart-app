@@ -25,7 +25,9 @@ function parseGoogleComponents(
 
   const streetNumber = get('street_number');
   const route = get('route');
-  const premise = get('premise') || get('subpremise');
+  const subpremise = get('subpremise');
+  const premise = get('premise');
+  const poi = get('point_of_interest') || get('establishment');
   const sublocality =
     get('sublocality_level_2') || get('sublocality_level_1') || get('sublocality');
   const neighborhood = get('neighborhood');
@@ -34,8 +36,13 @@ function parseGoogleComponents(
   const state = get('administrative_area_level_1');
   const pincode = get('postal_code');
 
-  const line1 = [premise, streetNumber, route].filter(Boolean).join(' ') || undefined;
-  const line2Parts = [neighborhood, sublocality].filter(Boolean) as string[];
+  const streetParts = [subpremise, premise, streetNumber, route].filter(Boolean) as string[];
+  const street = streetParts.join(' ') || undefined;
+  // Prefer street info on line 1, else fall back to a POI/landmark name.
+  const line1 = street || poi;
+  const line2Parts = [street ? poi : undefined, neighborhood, sublocality].filter(
+    Boolean,
+  ) as string[];
   const line2 = line2Parts.filter((p, i, arr) => arr.indexOf(p) === i).join(', ') || undefined;
 
   return {
@@ -47,28 +54,103 @@ function parseGoogleComponents(
   };
 }
 
+type GeocodeResult = {
+  formatted_address: string;
+  address_components: GoogleAddressComponent[];
+  types?: string[];
+};
+
+const PRECISION_RANK = [
+  'subpremise',
+  'premise',
+  'street_address',
+  'point_of_interest',
+  'establishment',
+  'route',
+];
+
+function pickBestResult(results: GeocodeResult[]): GeocodeResult {
+  for (const t of PRECISION_RANK) {
+    const match = results.find((r) => r.types?.includes(t));
+    if (match) return match;
+  }
+  return results[0];
+}
+
+async function fetchNearbyLandmark(lat: number, lng: number): Promise<string | undefined> {
+  if (!GOOGLE_MAPS_API_KEY) return undefined;
+  try {
+    const url =
+      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
+      `location=${lat},${lng}&rankby=distance&key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
+    const res = await fetch(url);
+    if (!res.ok) return undefined;
+    const data = (await res.json()) as {
+      status: string;
+      results?: Array<{ name: string; types: string[] }>;
+    };
+    if (data.status !== 'OK' || !data.results?.length) return undefined;
+    const skip = new Set(['route', 'street_address', 'plus_code', 'geocode']);
+    const named = data.results.find((r) => r.name && !r.types.every((t) => skip.has(t)));
+    return named?.name;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function reverseGeocodeGoogle(lat: number, lng: number): Promise<ParsedAddress> {
   if (!GOOGLE_MAPS_API_KEY) throw new Error('Missing Google Maps API key');
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${encodeURIComponent(
-    GOOGLE_MAPS_API_KEY,
-  )}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Google geocode failed');
-  const data = (await res.json()) as {
+  const url =
+    `https://maps.googleapis.com/maps/api/geocode/json?` +
+    `latlng=${lat},${lng}&result_type=street_address|premise|subpremise|route|point_of_interest&key=${encodeURIComponent(
+      GOOGLE_MAPS_API_KEY,
+    )}`;
+  let res = await fetch(url);
+  let data = (await res.json()) as {
     status: string;
-    results: Array<{
-      formatted_address: string;
-      address_components: GoogleAddressComponent[];
-    }>;
+    results: GeocodeResult[];
   };
+
+  if (data.status === 'ZERO_RESULTS' || !data.results?.length) {
+    // Fall back to an unfiltered request so we still get *something*.
+    const fallbackUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${encodeURIComponent(
+      GOOGLE_MAPS_API_KEY,
+    )}`;
+    res = await fetch(fallbackUrl);
+    data = (await res.json()) as typeof data;
+  }
+  if (!res.ok) throw new Error('Google geocode failed');
   if (data.status !== 'OK' || !data.results.length) {
     throw new Error(`Google geocode: ${data.status}`);
   }
-  const first = data.results[0];
+
+  const best = pickBestResult(data.results);
+  const parsed = parseGoogleComponents(best.address_components);
+
+  // If no street info came back, try to enrich addressLine1 with the nearest named landmark.
+  let addressLine1 = parsed.addressLine1;
+  let addressLine2 = parsed.addressLine2;
+  if (!addressLine1) {
+    const landmark = await fetchNearbyLandmark(lat, lng);
+    if (landmark) {
+      addressLine1 = landmark;
+    } else {
+      // Use the first chunk of the formatted address (often street-level).
+      addressLine1 = best.formatted_address.split(',')[0]?.trim() || undefined;
+    }
+  } else if (!addressLine2) {
+    const landmark = await fetchNearbyLandmark(lat, lng);
+    if (landmark && landmark !== addressLine1) {
+      addressLine2 = `Near ${landmark}`;
+    }
+  }
+
   return {
-    ...parseGoogleComponents(first.address_components),
+    ...parsed,
+    addressLine1,
+    addressLine2,
     coordinates: { lat, lng },
-    formattedAddress: first.formatted_address,
+    formattedAddress: best.formatted_address,
   };
 }
 

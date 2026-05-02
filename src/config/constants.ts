@@ -72,10 +72,13 @@ export const ORDER_STATUSES = [
 
 export const PAYMENT_METHODS = ['cod', 'razorpay'] as const;
 
-export const RAZORPAY_KEY = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? '';
+export const RAZORPAY_KEY = 'rzp_live_SiQTVNbS8pYQQ0';
 
-export const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
+export const GOOGLE_MAPS_API_KEY = 'AIzaSyCLGtTkBHAljKzHgZ7OFK5HG1rUXsM3MZs';
 
-export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
-export const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
-export const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+export const GOOGLE_WEB_CLIENT_ID =
+  '585136700835-c111hlrpa1d8srsv35se1agec07btoc6.apps.googleusercontent.com';
+export const GOOGLE_IOS_CLIENT_ID =
+  '585136700835-c111hlrpa1d8srsv35se1agec07btoc6.apps.googleusercontent.com';
+export const GOOGLE_ANDROID_CLIENT_ID =
+  '585136700835-9e2725md4jf9aihjmto9i4ajf60cqdlr.apps.googleusercontent.com';

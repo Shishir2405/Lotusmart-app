@@ -15,9 +15,9 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lotusmart.app",
+      "bundleIdentifier": "in.lotusmart.app",
       "config": {
-        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "AIzaSyCLGtTkBHAljKzHgZ7OFK5HG1rUXsM3MZs"
       },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "LotusMart uses your location to auto-fill your delivery address so you can check out faster."
@@ -28,11 +28,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFDF7"
       },
-      "package": "com.lotusmart.app",
+      "package": "in.lotusmart.app",
       "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
       "config": {
         "googleMaps": {
-          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyCLGtTkBHAljKzHgZ7OFK5HG1rUXsM3MZs"
         }
       }
     },

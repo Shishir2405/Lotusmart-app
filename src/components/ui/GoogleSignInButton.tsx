@@ -82,7 +82,7 @@ export function GoogleSignInButton({ label = 'Continue with Google', onSignedIn,
 
   const onPress = async () => {
     if (!isConfigured) {
-      showToast('error', 'Google Sign-In is not configured for this build.');
+      showToast('error', 'Google Sign-In is not set up for this build. Please use email login.');
       return;
     }
     await promptAsync();

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -19,7 +20,15 @@ export function useGoogleIdToken(
   onIdToken: (idToken: string) => void,
   onError?: (message: string) => void,
 ): UseGoogleIdTokenResult {
-  const isConfigured = Boolean(GOOGLE_WEB_CLIENT_ID);
+  // Native platforms must use a platform-specific OAuth client (registered
+  // with the app's bundle ID/package name); the web client alone produces
+  // "this web client is not authorized" from Google.
+  const isConfigured =
+    Platform.OS === 'ios'
+      ? Boolean(GOOGLE_IOS_CLIENT_ID)
+      : Platform.OS === 'android'
+        ? Boolean(GOOGLE_ANDROID_CLIENT_ID)
+        : Boolean(GOOGLE_WEB_CLIENT_ID);
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_WEB_CLIENT_ID || undefined,

@@ -173,7 +173,8 @@ export function LocationPicker({ initialValue, onChange }: Props) {
         return;
       }
       const position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.BestForNavigation,
+        mayShowUserSettingsDialog: true,
       });
       const { latitude, longitude } = position.coords;
       animateTo(latitude, longitude);
