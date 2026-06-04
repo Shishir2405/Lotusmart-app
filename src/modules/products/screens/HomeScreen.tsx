@@ -27,6 +27,7 @@ import { useFAQs } from '../../site-config/hooks';
 import type { FAQItem } from '../../site-config/api';
 import { ProductCard } from '../components/ProductCard';
 import { ProductListSkeleton } from '../components/ProductListSkeleton';
+import { DealsCollections } from '../components/DealsCollections';
 import { HomeHeader } from '../../../components/shared/HomeHeader';
 import { IProduct, ICategory } from '../../../types';
 import { RootStackParamList } from '../../../app/navigation/types';
@@ -178,10 +179,17 @@ function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
                   style={heroStyles.imageOverlay}
                 />
                 <View style={heroStyles.imageContent}>
-                  {item.tag ? (
-                    <Text style={[heroStyles.tag, { color: item.accentColor }]}>{item.tag}</Text>
-                  ) : null}
-                  <Text style={heroStyles.title}>{item.title}</Text>
+                  <Text style={heroStyles.title}>
+                    {item.title}
+                    {item.titleHighlight ? (
+                      <>
+                        {'\n'}
+                        <Text style={[heroStyles.titleHighlight, { color: item.accentColor }]}>
+                          {item.titleHighlight}
+                        </Text>
+                      </>
+                    ) : null}
+                  </Text>
                   <View
                     style={[heroStyles.cta, { backgroundColor: item.accentColor, marginTop: 10 }]}
                   >
@@ -198,7 +206,6 @@ function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
                 style={[heroStyles.slide, { width: SCREEN_WIDTH }]}
               >
                 <View style={heroStyles.content}>
-                  <Text style={[heroStyles.tag, { color: item.accentColor }]}>{item.tag}</Text>
                   <Text style={heroStyles.title}>
                     {item.title}
                     {item.titleHighlight ? (
@@ -210,29 +217,11 @@ function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
                       </>
                     ) : null}
                   </Text>
-                  <Text style={heroStyles.subtitle}>{item.subtitle}</Text>
-                  <View style={[heroStyles.cta, { backgroundColor: item.accentColor }]}>
+                  <View
+                    style={[heroStyles.cta, { backgroundColor: item.accentColor, marginTop: 16 }]}
+                  >
                     <Text style={heroStyles.ctaText}>{item.ctaText}</Text>
                     <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                  </View>
-
-                  <View style={heroStyles.trustRow}>
-                    <View style={heroStyles.trustBadge}>
-                      <Ionicons name="leaf-outline" size={12} color="rgba(255,255,255,0.7)" />
-                      <Text style={heroStyles.trustText}>100% Natural</Text>
-                    </View>
-                    <View style={heroStyles.trustBadge}>
-                      <Ionicons
-                        name="shield-checkmark-outline"
-                        size={12}
-                        color="rgba(255,255,255,0.7)"
-                      />
-                      <Text style={heroStyles.trustText}>FSSAI Certified</Text>
-                    </View>
-                    <View style={heroStyles.trustBadge}>
-                      <Ionicons name="car-outline" size={12} color="rgba(255,255,255,0.7)" />
-                      <Text style={heroStyles.trustText}>Free Shipping</Text>
-                    </View>
                   </View>
                 </View>
               </LinearGradient>
@@ -283,13 +272,6 @@ const heroStyles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 24,
   },
-  tag: {
-    fontFamily: FONTS.body.bold,
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
   title: {
     fontFamily: FONTS.heading.bold,
     fontSize: 28,
@@ -299,13 +281,6 @@ const heroStyles = StyleSheet.create({
   },
   titleHighlight: {
     fontFamily: FONTS.heading.extraBold,
-  },
-  subtitle: {
-    fontFamily: FONTS.body.regular,
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 16,
   },
   cta: {
     flexDirection: 'row',
@@ -321,21 +296,6 @@ const heroStyles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     letterSpacing: 0.3,
-  },
-  trustRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  trustBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  trustText: {
-    fontFamily: FONTS.body.medium,
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
   },
   indicatorRow: {
     flexDirection: 'row',
@@ -988,6 +948,11 @@ export function HomeScreen() {
               contentContainerStyle={{ paddingHorizontal: 16 }}
             />
           )}
+        </View>
+
+        {/* Deals & Collections */}
+        <View style={{ marginTop: 32 }}>
+          <DealsCollections />
         </View>
 
         {/* All Products Grid */}

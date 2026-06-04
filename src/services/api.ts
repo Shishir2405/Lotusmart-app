@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL } from '../config/constants';
+import { getDeviceId } from '../utils/deviceId';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,6 +16,15 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = await SecureStore.getItemAsync('auth_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Stable guest id so logged-out wishlist/cart toggles persist server-side.
+  try {
+    const deviceId = await getDeviceId();
+    if (deviceId) {
+      config.headers['x-device-id'] = deviceId;
+    }
+  } catch {
+    // Non-fatal: proceed without the device id.
   }
   if (__DEV__) {
     const method = (config.method ?? 'get').toUpperCase();

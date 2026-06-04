@@ -14,6 +14,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { useToast } from '../../../components/ui/Toast';
 import { useCartStore } from '../../../store/cart.store';
 import { useWishlistStore } from '../../../store/wishlist.store';
+import { useToggleWishlist } from '../../wishlist/hooks';
 import { formatCurrency, getDiscountPercentage, truncateText } from '../../../utils/helpers';
 import { IProduct } from '../../../types';
 import { FONTS } from '../../../config/fonts';
@@ -52,6 +53,7 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
   const addItem = useCartStore((s) => s.addItem);
   const toggleWishlistItem = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product._id));
+  const { mutate: toggleServerWishlist } = useToggleWishlist();
 
   const discount = getDiscountPercentage(product.price, product.compareAtPrice);
   const isOutOfStock = product.stock === 0;
@@ -113,6 +115,7 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
       withSpring(0.8, { damping: 8, stiffness: 300 }),
       withSpring(1, { damping: 10, stiffness: 200 }),
     );
+    // Optimistic local toggle first; `added` is the new state (true = now in wishlist).
     const added = toggleWishlistItem({
       productId: product._id,
       name: product.name,
@@ -123,8 +126,11 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
       unit: product.unit,
       isInStock: product.stock > 0,
     });
+    // Persist to the server. The mutation's `isInWishlist` flag is the PREVIOUS
+    // state, so it removes when the item was present (i.e. !added).
+    toggleServerWishlist({ productId: product._id, isInWishlist: !added });
     showToast('success', added ? 'Added to wishlist' : 'Removed from wishlist');
-  }, [toggleWishlistItem, product, showToast, heartScale]);
+  }, [toggleWishlistItem, toggleServerWishlist, product, showToast, heartScale]);
 
   return (
     <Animated.View

@@ -22,6 +22,9 @@ import { IProduct } from '../../../types';
 import { FONTS } from '../../../config/fonts';
 import { COLORS } from '../../../config/constants';
 
+// Search returns a LEAN shape; everything but the mapped fields may be absent.
+type SearchResult = Partial<IProduct>;
+
 export function SearchScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<Record<string, object | undefined>>>();
@@ -46,59 +49,73 @@ export function SearchScreen() {
   const handleGoBack = useCallback(() => navigation.goBack(), [navigation]);
 
   const renderItem = useCallback(
-    ({ item, index }: { item: IProduct; index: number }) => (
-      <Animated.View entering={FadeInDown.delay(index * 50).duration(250)}>
-        <TouchableOpacity
-          style={[styles.resultRow, { borderBottomColor: theme.colors.border }]}
-          activeOpacity={0.7}
-          onPress={() => handleProductPress(item._id)}
-        >
-          <Image source={{ uri: item.images[0] }} style={styles.productImage} />
-          <View style={styles.productInfo}>
-            <Text
-              style={[
-                styles.productName,
-                { color: theme.colors.text, fontFamily: FONTS.body.medium },
-              ]}
-              numberOfLines={2}
-            >
-              {item.name}
-            </Text>
-            <View style={styles.priceRow}>
+    ({ item, index }: { item: SearchResult; index: number }) => {
+      // The search endpoint returns a LEAN shape, so stock/ratings/compareAtPrice/images
+      // may be undefined. Guard every field.
+      const imageUri = item.images?.[0];
+      const price = item.price ?? 0;
+      const hasComparePrice =
+        item.compareAtPrice != null && item.compareAtPrice > price;
+      const hasStockInfo = typeof item.stock === 'number';
+
+      return (
+        <Animated.View entering={FadeInDown.delay(index * 50).duration(250)}>
+          <TouchableOpacity
+            style={[styles.resultRow, { borderBottomColor: theme.colors.border }]}
+            activeOpacity={0.7}
+            onPress={() => handleProductPress(item._id ?? '')}
+          >
+            <Image source={{ uri: imageUri }} style={styles.productImage} />
+            <View style={styles.productInfo}>
               <Text
-                style={[styles.productPrice, { color: COLORS.rose, fontFamily: FONTS.body.bold }]}
+                style={[
+                  styles.productName,
+                  { color: theme.colors.text, fontFamily: FONTS.body.medium },
+                ]}
+                numberOfLines={2}
               >
-                {formatCurrency(item.price)}
+                {item.name}
               </Text>
-              {item.compareAtPrice && item.compareAtPrice > item.price && (
+              <View style={styles.priceRow}>
                 <Text
-                  style={[
-                    styles.comparePrice,
-                    { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
-                  ]}
+                  style={[styles.productPrice, { color: COLORS.rose, fontFamily: FONTS.body.bold }]}
                 >
-                  {formatCurrency(item.compareAtPrice)}
+                  {formatCurrency(price)}
                 </Text>
-              )}
+                {hasComparePrice && (
+                  <Text
+                    style={[
+                      styles.comparePrice,
+                      { color: theme.colors.textSecondary, fontFamily: FONTS.body.regular },
+                    ]}
+                  >
+                    {formatCurrency(item.compareAtPrice as number)}
+                  </Text>
+                )}
+              </View>
+              {hasStockInfo &&
+                ((item.stock as number) > 0 ? (
+                  <Text style={{ fontSize: 11, color: COLORS.success, fontFamily: FONTS.body.medium }}>
+                    In Stock
+                  </Text>
+                ) : (
+                  <Text style={{ fontSize: 11, color: COLORS.error, fontFamily: FONTS.body.medium }}>
+                    Out of Stock
+                  </Text>
+                ))}
             </View>
-            {item.stock > 0 ? (
-              <Text style={{ fontSize: 11, color: COLORS.success, fontFamily: FONTS.body.medium }}>
-                In Stock
-              </Text>
-            ) : (
-              <Text style={{ fontSize: 11, color: COLORS.error, fontFamily: FONTS.body.medium }}>
-                Out of Stock
-              </Text>
-            )}
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
-        </TouchableOpacity>
-      </Animated.View>
-    ),
+            <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    },
     [theme, handleProductPress],
   );
 
-  const keyExtractor = useCallback((item: IProduct) => item._id, []);
+  const keyExtractor = useCallback(
+    (item: SearchResult, index: number) => item._id ?? String(index),
+    [],
+  );
 
   const hasQuery = query.trim().length > 0;
   const showEmpty = hasQuery && !showLoader && results.length === 0;

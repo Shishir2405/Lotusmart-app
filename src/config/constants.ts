@@ -78,6 +78,14 @@ export const GOOGLE_MAPS_API_KEY = 'AIzaSyCLGtTkBHAljKzHgZ7OFK5HG1rUXsM3MZs';
 
 export const GOOGLE_WEB_CLIENT_ID =
   '585136700835-c111hlrpa1d8srsv35se1agec07btoc6.apps.googleusercontent.com';
+// !!! PLACEHOLDER — DO NOT SHIP iOS WITH THIS VALUE !!!
+// This is currently a COPY of GOOGLE_WEB_CLIENT_ID (the WEB OAuth client), which
+// is INVALID for native iOS. You MUST replace it with a real **iOS** OAuth client
+// id created in Google Cloud Console for bundle id `in.lotusmart.app`, and add that
+// client's reversed-id URL scheme to app.json.
+// Until this is replaced, iOS Google login WILL FAIL (the minted ID token's `aud`
+// won't be a valid iOS client). Android login works once the backend accepts the
+// Android client id as a valid audience.
 export const GOOGLE_IOS_CLIENT_ID =
   '585136700835-c111hlrpa1d8srsv35se1agec07btoc6.apps.googleusercontent.com';
 export const GOOGLE_ANDROID_CLIENT_ID =

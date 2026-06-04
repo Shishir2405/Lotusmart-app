@@ -18,7 +18,8 @@ export const addToWishlist = async (
 export const removeFromWishlist = async (
   productId: string,
 ): Promise<IApiResponse<IWishlistItem[]>> => {
-  const response = await api.delete(`/wishlist/${productId}`);
+  // Web route expects productId as a query param, not a path param.
+  const response = await api.delete('/wishlist', { params: { productId } });
   return response.data;
 };
 
