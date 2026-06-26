@@ -5,7 +5,6 @@ import {
   ScrollView,
   FlatList,
   TouchableOpacity,
-  Image,
   Linking,
   StyleSheet,
   RefreshControl,
@@ -14,6 +13,7 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import { AppImage } from '../../../components/ui/AppImage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -173,7 +173,7 @@ function HeroBanner({ onShopPress }: { onShopPress: () => void }) {
           <TouchableOpacity activeOpacity={0.92} onPress={() => onSlidePress(item.link)}>
             {item.image ? (
               <View style={[heroStyles.slide, { width: SCREEN_WIDTH }]}>
-                <Image source={{ uri: item.image }} style={heroStyles.slideImage} />
+                <AppImage source={{ uri: item.image }} style={heroStyles.slideImage} />
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.65)']}
                   style={heroStyles.imageOverlay}
@@ -257,7 +257,6 @@ const heroStyles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -382,7 +381,7 @@ function CategoryItem({ category, onPress }: { category: ICategory; onPress: () 
         ]}
       >
         {category.image ? (
-          <Image source={{ uri: category.image }} style={catStyles.image} resizeMode="cover" />
+          <AppImage source={{ uri: category.image }} style={catStyles.image} />
         ) : (
           <Ionicons name="leaf" size={26} color={theme.colors.secondary} />
         )}
@@ -858,7 +857,9 @@ export function HomeScreen() {
     ({ item }: { item: ICategory }) => (
       <CategoryItem
         category={item}
-        onPress={() => navigation.navigate('ProductList', { category: item._id, title: item.name })}
+        onPress={() =>
+          navigation.navigate('ProductList', { category: item.slug, title: item.name })
+        }
       />
     ),
     [navigation],

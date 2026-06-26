@@ -10,8 +10,8 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  Image,
 } from 'react-native';
+import { AppImage } from '../../../components/ui/AppImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -126,7 +126,7 @@ export default function CategoriesScreen() {
   const openProducts = useCallback(
     (node: CategoryNode) => {
       navigation.navigate('ProductList', {
-        category: node._id,
+        category: node.slug,
         title: node.name,
       });
     },
@@ -159,7 +159,7 @@ export default function CategoriesScreen() {
             onLongPress={hasChildren ? () => toggle(node._id) : undefined}
           >
             {isTop && node.image ? (
-              <Image
+              <AppImage
                 source={{ uri: node.image }}
                 style={[styles.thumb, { width: bulletSize, height: bulletSize }]}
               />
@@ -268,7 +268,7 @@ export default function CategoriesScreen() {
           >
             <View style={styles.gridTopRow}>
               {isTop && node.image ? (
-                <Image source={{ uri: node.image }} style={styles.gridThumb} />
+                <AppImage source={{ uri: node.image }} style={styles.gridThumb} />
               ) : (
                 <View style={[styles.gridIconWrap, { backgroundColor: accentBg }]}>
                   <Ionicons

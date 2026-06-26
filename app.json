@@ -29,7 +29,12 @@
         "backgroundColor": "#FFFDF7"
       },
       "package": "in.lotusmart.app",
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCLGtTkBHAljKzHgZ7OFK5HG1rUXsM3MZs"
@@ -52,8 +57,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "ed25004a-dcc0-4f35-9cae-519f0982a155"
+        "projectId": "5dceaefe-5faf-4b61-bb36-d1cc3c4aee9e"
       }
-    }
+    },
+    "owner": "kkkkkwwwwwa"
   }
 }

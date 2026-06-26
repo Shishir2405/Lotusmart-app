@@ -81,8 +81,9 @@ export function ProductListScreen() {
 
   const activeFilters = useMemo(() => countActiveFilters(filterState), [filterState]);
 
-  const handleCategorySelect = useCallback((categoryId?: string) => {
-    setSelectedCategory(categoryId);
+  // `selectedCategory` holds the category *slug* (what the backend filters on).
+  const handleCategorySelect = useCallback((slug?: string) => {
+    setSelectedCategory(slug);
     setPage(1);
   }, []);
 
@@ -165,7 +166,7 @@ export function ProductListScreen() {
       {!search && categories.length > 0 && (
         <CategoryChip
           categories={categories}
-          selectedId={selectedCategory}
+          selectedSlug={selectedCategory}
           onSelect={handleCategorySelect}
         />
       )}

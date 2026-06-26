@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { AppImage } from '../../../components/ui/AppImage';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -153,7 +154,7 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
       >
         {/* Image */}
         <View style={styles.imageContainer}>
-          <Image
+          <AppImage
             source={{ uri: product.images[0] }}
             style={[
               styles.image,
@@ -162,7 +163,6 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
                 borderTopRightRadius: theme.borderRadius.md,
               },
             ]}
-            resizeMode="cover"
           />
 
           {/* Discount badge */}
