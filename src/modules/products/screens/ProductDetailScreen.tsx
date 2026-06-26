@@ -3,12 +3,12 @@ import {
   View,
   Text,
   ScrollView,
-  Image,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
   FlatList,
 } from 'react-native';
+import { AppImage } from '../../../components/ui/AppImage';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -293,10 +293,9 @@ export function ProductDetailScreen() {
             viewabilityConfig={viewabilityConfig}
             keyExtractor={(_, i) => `img-${i}`}
             renderItem={({ item: uri }) => (
-              <Image
+              <AppImage
                 source={{ uri }}
                 style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 0.85 }}
-                resizeMode="cover"
               />
             )}
           />

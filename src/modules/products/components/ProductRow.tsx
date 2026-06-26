@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { AppImage } from '../../../components/ui/AppImage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,7 +75,7 @@ export function ProductRow({ product }: Props) {
     >
       <View style={styles.imageWrap}>
         {product.images?.[0] ? (
-          <Image source={{ uri: product.images[0] }} style={styles.image} />
+          <AppImage source={{ uri: product.images[0] }} style={styles.image} />
         ) : (
           <View style={[styles.image, styles.imageFallback]}>
             <Ionicons name="leaf-outline" size={22} color={COLORS.olive} />
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F0EA',
     position: 'relative',
   },
-  image: { width: '100%', height: '100%', resizeMode: 'cover' },
+  image: { width: '100%', height: '100%' },
   imageFallback: { alignItems: 'center', justifyContent: 'center' },
   discountPill: {
     position: 'absolute',

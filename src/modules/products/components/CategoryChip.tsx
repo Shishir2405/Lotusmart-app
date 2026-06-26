@@ -7,12 +7,13 @@ import { COLORS } from '../../../config/constants';
 
 interface CategoryChipProps {
   categories: ICategory[];
-  selectedId?: string;
-  onSelect: (categoryId?: string) => void;
+  // The backend filters products by category *slug*, so selection is slug-based.
+  selectedSlug?: string;
+  onSelect: (slug?: string) => void;
 }
 
 interface ChipItemProps {
-  category: { _id: string; name: string };
+  category: { _id: string; name: string; slug: string };
   isActive: boolean;
   onPress: () => void;
 }
@@ -47,22 +48,22 @@ const ChipItem = React.memo(function ChipItem({ category, isActive, onPress }: C
   );
 });
 
-export function CategoryChip({ categories, selectedId, onSelect }: CategoryChipProps) {
-  const allChip = { _id: 'all', name: 'All' };
+export function CategoryChip({ categories, selectedSlug, onSelect }: CategoryChipProps) {
+  const allChip = { _id: 'all', name: 'All', slug: 'all' };
   const data = [allChip, ...categories];
 
   const renderItem = useCallback(
-    ({ item }: { item: { _id: string; name: string } }) => {
-      const isActive = item._id === 'all' ? !selectedId : selectedId === item._id;
+    ({ item }: { item: { _id: string; name: string; slug: string } }) => {
+      const isActive = item._id === 'all' ? !selectedSlug : selectedSlug === item.slug;
       return (
         <ChipItem
           category={item}
           isActive={isActive}
-          onPress={() => onSelect(item._id === 'all' ? undefined : item._id)}
+          onPress={() => onSelect(item._id === 'all' ? undefined : item.slug)}
         />
       );
     },
-    [selectedId, onSelect],
+    [selectedSlug, onSelect],
   );
 
   return (

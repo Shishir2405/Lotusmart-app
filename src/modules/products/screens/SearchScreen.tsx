@@ -5,10 +5,10 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { AppImage } from '../../../components/ui/AppImage';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -54,8 +54,7 @@ export function SearchScreen() {
       // may be undefined. Guard every field.
       const imageUri = item.images?.[0];
       const price = item.price ?? 0;
-      const hasComparePrice =
-        item.compareAtPrice != null && item.compareAtPrice > price;
+      const hasComparePrice = item.compareAtPrice != null && item.compareAtPrice > price;
       const hasStockInfo = typeof item.stock === 'number';
 
       return (
@@ -65,7 +64,7 @@ export function SearchScreen() {
             activeOpacity={0.7}
             onPress={() => handleProductPress(item._id ?? '')}
           >
-            <Image source={{ uri: imageUri }} style={styles.productImage} />
+            <AppImage source={{ uri: imageUri }} style={styles.productImage} />
             <View style={styles.productInfo}>
               <Text
                 style={[
@@ -95,11 +94,15 @@ export function SearchScreen() {
               </View>
               {hasStockInfo &&
                 ((item.stock as number) > 0 ? (
-                  <Text style={{ fontSize: 11, color: COLORS.success, fontFamily: FONTS.body.medium }}>
+                  <Text
+                    style={{ fontSize: 11, color: COLORS.success, fontFamily: FONTS.body.medium }}
+                  >
                     In Stock
                   </Text>
                 ) : (
-                  <Text style={{ fontSize: 11, color: COLORS.error, fontFamily: FONTS.body.medium }}>
+                  <Text
+                    style={{ fontSize: 11, color: COLORS.error, fontFamily: FONTS.body.medium }}
+                  >
                     Out of Stock
                   </Text>
                 ))}

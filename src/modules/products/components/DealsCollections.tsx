@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, Linking, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import { AppImage } from '../../../components/ui/AppImage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,7 +90,7 @@ export function DealsCollections() {
     const rest = remote.slice(1, 3);
     if (rest.length === 0) return STATIC_SECONDARIES;
     return rest.map((b, i) => ({
-      ...STATIC_SECONDARIES[i] ?? STATIC_SECONDARIES[0],
+      ...(STATIC_SECONDARIES[i] ?? STATIC_SECONDARIES[0]),
       id: b._id,
       headline: b.title || STATIC_SECONDARIES[i]?.headline || 'Explore',
       body: b.subtitle || STATIC_SECONDARIES[i]?.body || '',
@@ -150,7 +151,7 @@ export function DealsCollections() {
       >
         {primary.image ? (
           <>
-            <Image source={{ uri: primary.image }} style={styles.cardImage} />
+            <AppImage source={{ uri: primary.image }} style={styles.cardImage} />
             <LinearGradient
               colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.85)']}
               style={StyleSheet.absoluteFill}
@@ -209,7 +210,7 @@ export function DealsCollections() {
           >
             {b.image ? (
               <>
-                <Image source={{ uri: b.image }} style={styles.cardImage} />
+                <AppImage source={{ uri: b.image }} style={styles.cardImage} />
                 <LinearGradient
                   colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.82)']}
                   style={StyleSheet.absoluteFill}
@@ -301,7 +302,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   primaryCard: {
     height: 280,
