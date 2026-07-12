@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Badge, Skeleton } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
+import { EmptyState } from '../../../components/shared/EmptyState';
 import { useProduct } from '../hooks';
 import { useLoadingCap } from '../../../hooks/useLoadingCap';
 import { useCartStore } from '../../../store/cart.store';
@@ -105,7 +106,7 @@ export function ProductDetailScreen() {
   const { productId } = route.params;
   const { showToast } = useToast();
 
-  const { data: productRes, isLoading } = useProduct(productId);
+  const { data: productRes, isLoading, refetch } = useProduct(productId);
   const product = productRes?.data;
   const showSkeleton = useLoadingCap(isLoading && !product);
 
@@ -242,28 +243,38 @@ export function ProductDetailScreen() {
     setQuantity((q) => Math.max(q - 1, min));
   }, [product]);
 
-  // ====== LOADING STATE ======
+  // ====== LOADING / ERROR STATE ======
   if (!product) {
+    if (showSkeleton) {
+      return (
+        <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+          <Skeleton width={SCREEN_WIDTH} height={SCREEN_WIDTH * 0.85} borderRadius={0} />
+          <View style={{ padding: 16, gap: 12 }}>
+            <Skeleton width="80%" height={24} />
+            <Skeleton width="50%" height={16} />
+            <Skeleton width="40%" height={28} />
+            <Skeleton
+              width="100%"
+              height={48}
+              borderRadius={theme.borderRadius.md}
+              style={{ marginTop: 12 }}
+            />
+            <Skeleton width="100%" height={48} borderRadius={theme.borderRadius.md} />
+          </View>
+        </ScrollView>
+      );
+    }
+    // Loaded but no product = fetch error / not found. Show a retry instead of a blank screen.
     return (
-      <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        {showSkeleton ? (
-          <>
-            <Skeleton width={SCREEN_WIDTH} height={SCREEN_WIDTH * 0.85} borderRadius={0} />
-            <View style={{ padding: 16, gap: 12 }}>
-              <Skeleton width="80%" height={24} />
-              <Skeleton width="50%" height={16} />
-              <Skeleton width="40%" height={28} />
-              <Skeleton
-                width="100%"
-                height={48}
-                borderRadius={theme.borderRadius.md}
-                style={{ marginTop: 12 }}
-              />
-              <Skeleton width="100%" height={48} borderRadius={theme.borderRadius.md} />
-            </View>
-          </>
-        ) : null}
-      </ScrollView>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <EmptyState
+          icon="cloud-offline-outline"
+          title="Couldn't load product"
+          description="Please check your connection and try again."
+          actionLabel="Retry"
+          onAction={() => refetch()}
+        />
+      </View>
     );
   }
 

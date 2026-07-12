@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getOrders, getOrder, createOrder, cancelOrder, ICreateOrderData } from './api';
-import { useCartStore } from '../../store/cart.store';
 
 export const orderKeys = {
   all: ['orders'] as const,
@@ -25,13 +24,15 @@ export function useOrder(id: string) {
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
-  const cartStore = useCartStore();
 
   return useMutation({
     mutationFn: (data: ICreateOrderData) => createOrder(data),
     onSuccess: () => {
+      // NOTE: do NOT clear the cart here. For Razorpay the order is created
+      // BEFORE payment — clearing now would wipe the cart on a cancelled/failed
+      // payment. CheckoutScreen clears the cart only after COD placement or a
+      // verified Razorpay payment.
       queryClient.invalidateQueries({ queryKey: orderKeys.all });
-      cartStore.clearCart();
     },
   });
 }

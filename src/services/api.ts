@@ -52,22 +52,26 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const cfg = error.config;
-    const method = (cfg?.method ?? 'get').toUpperCase();
-    const url = cfg?.url ?? '(no url)';
-    const status = error.response?.status ?? 'NO_RESPONSE';
-    const code = error.code ?? 'UNKNOWN';
-    const responseBody = summarize(error.response?.data);
-    const requestBody = summarize(cfg?.data);
+    // Only log request/response bodies in development — in production this could
+    // leak credentials (e.g. a failed /auth/login), tokens, and PII into device
+    // logs (logcat / Console.app).
+    if (__DEV__) {
+      const cfg = error.config;
+      const method = (cfg?.method ?? 'get').toUpperCase();
+      const url = cfg?.url ?? '(no url)';
+      const status = error.response?.status ?? 'NO_RESPONSE';
+      const code = error.code ?? 'UNKNOWN';
+      const responseBody = summarize(error.response?.data);
+      const requestBody = summarize(cfg?.data);
 
-    // Prominent log so it's easy to spot in Metro / Expo terminal.
-    console.warn(
-      `[api ERROR] ${status} ${method} ${url}\n` +
-        `  code: ${code}\n` +
-        `  message: ${error.message}\n` +
-        (requestBody ? `  request: ${requestBody}\n` : '') +
-        (responseBody ? `  response: ${responseBody}` : ''),
-    );
+      console.warn(
+        `[api ERROR] ${status} ${method} ${url}\n` +
+          `  code: ${code}\n` +
+          `  message: ${error.message}\n` +
+          (requestBody ? `  request: ${requestBody}\n` : '') +
+          (responseBody ? `  response: ${responseBody}` : ''),
+      );
+    }
 
     if (error.response?.status === 401) {
       await SecureStore.deleteItemAsync('auth_token');

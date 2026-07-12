@@ -155,7 +155,7 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
         {/* Image */}
         <View style={styles.imageContainer}>
           <AppImage
-            source={{ uri: product.images[0] }}
+            source={{ uri: product.images?.[0] }}
             style={[
               styles.image,
               {
@@ -205,9 +205,9 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
             {product.name}
           </Text>
 
-          {product.ratings.count > 0 && (
+          {(product.ratings?.count ?? 0) > 0 && (
             <View style={styles.ratingRow}>
-              <RatingStars rating={product.ratings.average} />
+              <RatingStars rating={product.ratings?.average ?? 0} />
               <Text
                 style={[
                   styles.ratingCount,

@@ -1,17 +1,10 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  Alert,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
+import { View, Text, ScrollView, Image, Alert, StyleSheet, SafeAreaView } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Card, Badge, Button, Skeleton } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
+import { EmptyState } from '../../../components/shared/EmptyState';
 import { useOrder, useCancelOrder } from '../hooks';
 import {
   formatCurrency,
@@ -22,13 +15,7 @@ import {
 import type { IOrder, OrderStatus } from '../../../types';
 import type { OrderStackParamList } from '../types';
 
-const STATUS_STEPS: OrderStatus[] = [
-  'placed',
-  'confirmed',
-  'processing',
-  'shipped',
-  'delivered',
-];
+const STATUS_STEPS: OrderStatus[] = ['placed', 'confirmed', 'processing', 'shipped', 'delivered'];
 
 const STATUS_LABELS: Record<string, string> = {
   placed: 'Order Placed',
@@ -81,7 +68,21 @@ export default function OrderDetailScreen() {
     );
   }, [orderId, cancelMutation, showToast, refetch]);
 
-  if (isLoading || !order) {
+  if (!order) {
+    // Loaded but no order = fetch error / not found. Show a retry, not an endless skeleton.
+    if (!isLoading) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+          <EmptyState
+            icon="cloud-offline-outline"
+            title="Couldn't load order"
+            description="Please check your connection and try again."
+            actionLabel="Retry"
+            onAction={() => refetch()}
+          />
+        </SafeAreaView>
+      );
+    }
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -92,7 +93,10 @@ export default function OrderDetailScreen() {
           <View style={styles.section}>
             <Skeleton width="40%" height={18} style={{ marginBottom: 16 }} />
             {[1, 2, 3, 4, 5].map((i) => (
-              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+              <View
+                key={i}
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}
+              >
                 <Skeleton width={20} height={20} borderRadius={10} />
                 <Skeleton width="50%" height={14} style={{ marginLeft: 16 }} />
               </View>
@@ -113,10 +117,7 @@ export default function OrderDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Order Header */}
         <View style={styles.section}>
           <View style={styles.headerRow}>
@@ -138,15 +139,14 @@ export default function OrderDetailScreen() {
         {/* Status Timeline */}
         {!isCancelled && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Order Status
-            </Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Order Status</Text>
             <View style={styles.timeline}>
               {STATUS_STEPS.map((step, index) => {
                 const isCompleted = index <= currentStepIndex;
                 const isActive = index === currentStepIndex;
                 const circleColor = isCompleted ? theme.colors.primary : theme.colors.border;
-                const lineColor = index < currentStepIndex ? theme.colors.primary : theme.colors.border;
+                const lineColor =
+                  index < currentStepIndex ? theme.colors.primary : theme.colors.border;
                 const isLast = index === STATUS_STEPS.length - 1;
 
                 return (
@@ -162,9 +162,7 @@ export default function OrderDetailScreen() {
                           isActive && styles.timelineCircleActive,
                         ]}
                       >
-                        {isCompleted && (
-                          <Text style={styles.checkmark}>{'\u2713'}</Text>
-                        )}
+                        {isCompleted && <Text style={styles.checkmark}>{'\u2713'}</Text>}
                       </View>
                       {!isLast && (
                         <View style={[styles.timelineLine, { backgroundColor: lineColor }]} />
@@ -234,9 +232,7 @@ export default function OrderDetailScreen() {
 
         {/* Items */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Items
-          </Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Items</Text>
           {order.items.map((item, index) => (
             <View
               key={`${item.product}-${index}`}
@@ -253,10 +249,7 @@ export default function OrderDetailScreen() {
                 style={[styles.itemImage, { backgroundColor: theme.colors.border }]}
               />
               <View style={styles.itemInfo}>
-                <Text
-                  style={[styles.itemName, { color: theme.colors.text }]}
-                  numberOfLines={2}
-                >
+                <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={2}>
                   {item.name}
                 </Text>
                 {item.variant && (
@@ -277,9 +270,7 @@ export default function OrderDetailScreen() {
 
         {/* Shipping Address */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Shipping Address
-          </Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Shipping Address</Text>
           <Card>
             <Text style={[styles.addressName, { color: theme.colors.text }]}>
               {order.shippingAddress.fullName}
@@ -304,9 +295,7 @@ export default function OrderDetailScreen() {
 
         {/* Payment */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Payment
-          </Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Payment</Text>
           <Card>
             <View style={styles.paymentRow}>
               <Text style={[styles.paymentLabel, { color: theme.colors.textSecondary }]}>
@@ -330,9 +319,7 @@ export default function OrderDetailScreen() {
 
         {/* Price Details */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Price Details
-          </Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Price Details</Text>
           <Card>
             <View style={styles.priceRow}>
               <Text style={[styles.priceLabel, { color: theme.colors.textSecondary }]}>
@@ -346,7 +333,12 @@ export default function OrderDetailScreen() {
               <Text style={[styles.priceLabel, { color: theme.colors.textSecondary }]}>
                 Shipping
               </Text>
-              <Text style={[styles.priceValue, { color: order.shippingCost === 0 ? theme.colors.success : theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.priceValue,
+                  { color: order.shippingCost === 0 ? theme.colors.success : theme.colors.text },
+                ]}
+              >
                 {order.shippingCost === 0 ? 'FREE' : formatCurrency(order.shippingCost)}
               </Text>
             </View>
@@ -362,9 +354,7 @@ export default function OrderDetailScreen() {
             )}
             <View style={[styles.totalDivider, { backgroundColor: theme.colors.border }]} />
             <View style={styles.priceRow}>
-              <Text style={[styles.totalLabel, { color: theme.colors.text }]}>
-                Total
-              </Text>
+              <Text style={[styles.totalLabel, { color: theme.colors.text }]}>Total</Text>
               <Text style={[styles.totalValue, { color: theme.colors.text }]}>
                 {formatCurrency(order.total)}
               </Text>

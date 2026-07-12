@@ -29,6 +29,7 @@
         "backgroundColor": "#FFFDF7"
       },
       "package": "in.lotusmart.app",
+      "versionCode": 100,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
@@ -55,11 +56,11 @@
       ],
       "expo-web-browser"
     ],
+    "owner": "lotussss",
     "extra": {
       "eas": {
-        "projectId": "5dceaefe-5faf-4b61-bb36-d1cc3c4aee9e"
+        "projectId": "adb70211-a49e-4c4f-96cf-f88fd2be8ee1"
       }
-    },
-    "owner": "kkkkkwwwwwa"
+    }
   }
 }

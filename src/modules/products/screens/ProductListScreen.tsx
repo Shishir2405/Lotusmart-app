@@ -11,7 +11,7 @@ import {
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../theme/ThemeContext';
-import { useProducts, useCategories } from '../hooks';
+import { useInfiniteProducts, useCategories } from '../hooks';
 import { ProductCard } from '../components/ProductCard';
 import { ProductRow } from '../components/ProductRow';
 import { CategoryChip } from '../components/CategoryChip';
@@ -47,7 +47,6 @@ export function ProductListScreen() {
   const { category: routeCategory, search } = route.params ?? {};
 
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(routeCategory);
-  const [page, setPage] = useState(1);
   const [filterState, setFilterState] = useState<FilterState>(DEFAULT_FILTERS);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -64,41 +63,46 @@ export function ProductListScreen() {
       isVegan: filterState.isVegan || undefined,
       isGlutenFree: filterState.isGlutenFree || undefined,
       inStock: filterState.inStock || undefined,
-      page,
       limit: 20,
     }),
-    [selectedCategory, search, filterState, page],
+    [selectedCategory, search, filterState],
   );
 
-  const { data: productsRes, isLoading, refetch, isFetching } = useProducts(filters);
+  const {
+    data: productsData,
+    isLoading,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteProducts(filters);
   const { data: categoriesRes } = useCategories();
-  const showSkeleton = useLoadingCap(isLoading && !productsRes);
+  const showSkeleton = useLoadingCap(isLoading && !productsData);
 
-  const products = productsRes?.data ?? [];
+  const products = useMemo(
+    () => productsData?.pages.flatMap((pg) => pg.data ?? []) ?? [],
+    [productsData],
+  );
   const categories = categoriesRes?.data ?? [];
-  const pagination = productsRes?.pagination;
-  const hasMore = pagination ? pagination.page < pagination.totalPages : false;
+  const pagination = productsData?.pages[productsData.pages.length - 1]?.pagination;
 
   const activeFilters = useMemo(() => countActiveFilters(filterState), [filterState]);
 
   // `selectedCategory` holds the category *slug* (what the backend filters on).
   const handleCategorySelect = useCallback((slug?: string) => {
     setSelectedCategory(slug);
-    setPage(1);
   }, []);
 
   const handleApplyFilters = useCallback((next: FilterState) => {
     setFilterState(next);
-    setPage(1);
   }, []);
 
   const handleEndReached = useCallback(() => {
-    if (hasMore && !isFetching) setPage((p) => p + 1);
-  }, [hasMore, isFetching]);
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    setPage(1);
     await refetch();
     setRefreshing(false);
   }, [refetch]);
@@ -146,7 +150,7 @@ export function ProductListScreen() {
   }, [showSkeleton, theme]);
 
   const renderFooter = useCallback(() => {
-    if (!isFetching || isLoading) return null;
+    if (!isFetchingNextPage) return null;
     return (
       <View style={styles.footer}>
         <Text
@@ -159,7 +163,7 @@ export function ProductListScreen() {
         </Text>
       </View>
     );
-  }, [isFetching, isLoading, theme]);
+  }, [isFetchingNextPage, theme]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -240,7 +244,7 @@ export function ProductListScreen() {
         </View>
       </View>
 
-      {showSkeleton && page === 1 ? (
+      {showSkeleton ? (
         <ProductListSkeleton count={6} />
       ) : viewMode === 'grid' ? (
         <FlatList
