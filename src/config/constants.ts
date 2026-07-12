@@ -1,5 +1,10 @@
 export const API_BASE_URL = 'https://lotusmart.in/api';
 
+// Feature flag: show/hide "Continue with Google" on the Login & Register screens.
+// Re-enabled after enabling "Custom URI scheme" on the Android OAuth client.
+// NOTE: this only works once that toggle + the SHA-1 are set in Google Cloud.
+export const SHOW_GOOGLE_AUTH = true;
+
 export const COLORS = {
   // Exact website colors
   cream: '#FFF8F0',

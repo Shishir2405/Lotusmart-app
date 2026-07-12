@@ -23,7 +23,7 @@ import { registerSchema, RegisterFormData } from '../../../utils/validators';
 import { useRegister } from '../hooks';
 import { AuthStackParamList } from '../types';
 import { FONTS } from '../../../config/fonts';
-import { COLORS } from '../../../config/constants';
+import { COLORS, SHOW_GOOGLE_AUTH } from '../../../config/constants';
 import logoImage from '../../../../assets/logo.png';
 
 type RegisterNavProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -127,28 +127,30 @@ export default function RegisterScreen() {
             </Text>
           </Animated.View>
 
-          {/* Google Sign-In */}
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(400)}
-            style={styles.googleSection}
-          >
-            <GoogleSignInButton
-              label="Continue with Google"
-              onSignedIn={({ profileComplete }) => routeAfterAuth(profileComplete)}
-            />
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-              <Text
-                style={[
-                  styles.dividerText,
-                  { color: theme.colors.textSecondary, fontFamily: FONTS.body.medium },
-                ]}
-              >
-                or sign up with email
-              </Text>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-            </View>
-          </Animated.View>
+          {/* Google Sign-In — hidden via SHOW_GOOGLE_AUTH until native OAuth is configured */}
+          {SHOW_GOOGLE_AUTH && (
+            <Animated.View
+              entering={FadeInDown.delay(300).duration(400)}
+              style={styles.googleSection}
+            >
+              <GoogleSignInButton
+                label="Continue with Google"
+                onSignedIn={({ profileComplete }) => routeAfterAuth(profileComplete)}
+              />
+              <View style={styles.dividerRow}>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+                <Text
+                  style={[
+                    styles.dividerText,
+                    { color: theme.colors.textSecondary, fontFamily: FONTS.body.medium },
+                  ]}
+                >
+                  or sign up with email
+                </Text>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              </View>
+            </Animated.View>
+          )}
 
           {/* Form */}
           <Animated.View entering={FadeInDown.delay(350).duration(400)} style={styles.formSection}>

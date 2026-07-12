@@ -8,6 +8,7 @@ import { ThemeProvider } from '../../theme/ThemeContext';
 import { ToastProvider } from '../../components/ui/Toast';
 import { useFonts, fontMap } from '../../config/fonts';
 import { SplashScreen } from '../../components/shared/SplashScreen';
+import { ErrorBoundary } from '../../components/shared/ErrorBoundary';
 
 // gcTime must be >= the persister maxAge below, otherwise inactive queries are
 // dropped from the cache before they can be restored on the next cold start.
@@ -58,15 +59,17 @@ export function AppProviders({ children, onReady }: AppProvidersProps) {
   }
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister: asyncStoragePersister, maxAge: CACHE_MAX_AGE }}
-    >
-      <ThemeProvider>
-        <NavigationContainer theme={LightNavigationTheme} onReady={onReady}>
-          <ToastProvider>{children}</ToastProvider>
-        </NavigationContainer>
-      </ThemeProvider>
-    </PersistQueryClientProvider>
+    <ErrorBoundary>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister: asyncStoragePersister, maxAge: CACHE_MAX_AGE }}
+      >
+        <ThemeProvider>
+          <NavigationContainer theme={LightNavigationTheme} onReady={onReady}>
+            <ToastProvider>{children}</ToastProvider>
+          </NavigationContainer>
+        </ThemeProvider>
+      </PersistQueryClientProvider>
+    </ErrorBoundary>
   );
 }

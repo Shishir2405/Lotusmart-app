@@ -25,7 +25,7 @@ import { useAuthStore } from '../../../store/auth.store';
 import { useAddresses, useCreateAddress } from '../../auth/hooks';
 import { useCreateOrder } from '../../orders/hooks';
 import { useCreateRazorpayOrder, useVerifyPayment } from '../../payments/hooks';
-import { formatCurrency, getShippingCost } from '../../../utils/helpers';
+import { formatCurrency } from '../../../utils/helpers';
 import { FREE_SHIPPING_THRESHOLD, RAZORPAY_KEY, COLORS } from '../../../config/constants';
 import { FONTS } from '../../../config/fonts';
 import { IAddress, PaymentMethod, AddressLabel } from '../../../types';
@@ -38,6 +38,9 @@ const STEPS = [
   { key: 'address', label: 'Address', icon: 'location-outline' as const },
   { key: 'payment', label: 'Payment', icon: 'card-outline' as const },
 ];
+
+// Flat COD handling fee — must match the backend (orders route: cod ? 100 : 0).
+const COD_SHIPPING_FEE = 100;
 
 interface AddressFormState {
   fullName: string;
@@ -233,7 +236,11 @@ export function CheckoutScreen() {
     }
   }, [addresses, selectedAddressId]);
 
-  const shippingCost = useMemo(() => getShippingCost(subtotal), [subtotal]);
+  // Mirror the backend: prepaid (Razorpay) ships free; COD adds a flat ₹100 fee.
+  const shippingCost = useMemo(
+    () => (paymentMethod === 'cod' ? COD_SHIPPING_FEE : 0),
+    [paymentMethod],
+  );
   const total = useMemo(
     () => Math.max(0, subtotal + shippingCost - discount),
     [subtotal, shippingCost, discount],
@@ -368,7 +375,8 @@ export function CheckoutScreen() {
     }
 
     if (!user) {
-      showToast('error', 'Please login to place an order.');
+      showToast('error', 'Please login to place your order.');
+      navigation.navigate('Auth', { screen: 'Login' });
       return;
     }
 
@@ -387,13 +395,27 @@ export function CheckoutScreen() {
       const orderRes = await createOrderMutation.mutateAsync({
         items: orderItems,
         shippingAddress: address,
-        paymentMethod: 'razorpay',
+        paymentMethod,
         couponCode: couponCode ?? undefined,
       });
 
       const order = orderRes.data;
       if (!order) {
         showToast('error', 'Failed to create order');
+        return;
+      }
+
+      // Cash on Delivery: the server already placed the order (no online payment
+      // step). Confirm and go home.
+      if (paymentMethod === 'cod') {
+        clearCart();
+        showToast('success', 'Order placed! Pay cash when it arrives.');
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Main' }],
+          }),
+        );
         return;
       }
 
@@ -848,6 +870,56 @@ export function CheckoutScreen() {
           </View>
         </TouchableOpacity>
 
+        <TouchableOpacity activeOpacity={0.7} onPress={() => setPaymentMethod('cod')}>
+          <View
+            style={[
+              styles.paymentCard,
+              {
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.borderRadius.md,
+                borderColor: paymentMethod === 'cod' ? theme.colors.primary : theme.colors.border,
+                borderWidth: paymentMethod === 'cod' ? 2 : 1,
+                marginTop: 10,
+              },
+            ]}
+          >
+            <View style={styles.radioRow}>
+              <View
+                style={[
+                  styles.radioOuter,
+                  {
+                    borderColor:
+                      paymentMethod === 'cod' ? theme.colors.primary : theme.colors.border,
+                  },
+                ]}
+              >
+                {paymentMethod === 'cod' && (
+                  <View style={[styles.radioInner, { backgroundColor: theme.colors.primary }]} />
+                )}
+              </View>
+              <Ionicons
+                name="cash-outline"
+                size={24}
+                color={paymentMethod === 'cod' ? theme.colors.primary : theme.colors.textSecondary}
+                style={styles.paymentIcon}
+              />
+              <View style={styles.flex}>
+                <Text style={[styles.paymentLabel, { color: theme.colors.text }]}>
+                  Cash on Delivery
+                </Text>
+                <Text style={[styles.paymentHint, { color: theme.colors.textSecondary }]}>
+                  Pay in cash when your order arrives (₹100 handling fee)
+                </Text>
+                {!user && (
+                  <Text style={[styles.loginRequired, { color: theme.colors.warning }]}>
+                    Login required to place an order
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         {/* Final Order Summary */}
         <View
           style={[
@@ -918,7 +990,12 @@ export function CheckoutScreen() {
     if (currentStep < 2) {
       return 'Continue';
     }
-    return `Pay ${formatCurrency(total)}`;
+    if (!user) {
+      return 'Login to Continue';
+    }
+    return paymentMethod === 'cod'
+      ? `Place Order · ${formatCurrency(total)}`
+      : `Pay ${formatCurrency(total)}`;
   };
 
   const handleBottomPress = () => {

@@ -36,8 +36,13 @@ export function useLogin() {
   const wishlistStore = useWishlistStore();
 
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      login(email, password),
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const response = await login(email, password);
+      if (!response.data?.token) {
+        throw new Error(response.message || 'Login failed. Please try again.');
+      }
+      return response;
+    },
     onSuccess: async (response) => {
       const { token, user } = response.data!;
       await SecureStore.setItemAsync('auth_token', token);
@@ -78,7 +83,13 @@ export function useRegister() {
   const { setUser, setToken } = useAuthStore();
 
   return useMutation({
-    mutationFn: (payload: RegisterPayload) => register(payload),
+    mutationFn: async (payload: RegisterPayload) => {
+      const response = await register(payload);
+      if (!response.data?.user) {
+        throw new Error(response.message || 'Registration failed. Please try again.');
+      }
+      return response;
+    },
     onSuccess: async (response) => {
       const { token, user } = response.data!;
       if (token) {
@@ -94,7 +105,13 @@ export function useGoogleAuth() {
   const { setUser, setToken } = useAuthStore();
 
   return useMutation({
-    mutationFn: (idToken: string) => googleAuth(idToken),
+    mutationFn: async (idToken: string) => {
+      const response = await googleAuth(idToken);
+      if (!response.data?.user) {
+        throw new Error(response.message || 'Google sign-in failed. Please try again.');
+      }
+      return response;
+    },
     onSuccess: async (response) => {
       const { token, user } = response.data!;
       if (token) {

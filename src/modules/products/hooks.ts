@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getProducts, getProduct, searchProducts, getCategories } from './api';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -24,6 +24,22 @@ export function useProducts(filters: IProductFilters) {
     queryFn: () => getProducts(filters),
     staleTime: 2 * 60 * 1000,
     placeholderData: keepPreviousData,
+  });
+}
+
+// Paginated browse: pages ACCUMULATE (flatMap) instead of replacing each other,
+// so scrolling a big category loads more instead of swapping the visible 20.
+// Pass filters WITHOUT `page` — the page is driven by the infinite query cursor.
+export function useInfiniteProducts(filters: IProductFilters) {
+  return useInfiniteQuery({
+    queryKey: ['products', 'infinite', filters] as const,
+    queryFn: ({ pageParam }) => getProducts({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const p = lastPage.pagination;
+      return p && p.page < p.totalPages ? p.page + 1 : undefined;
+    },
+    staleTime: 2 * 60 * 1000,
   });
 }
 
