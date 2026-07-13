@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
+  Share,
 } from 'react-native';
 import { AppImage } from '../../../components/ui/AppImage';
 import Animated, {
@@ -208,6 +209,17 @@ export function ProductDetailScreen() {
     navigation.navigate('Checkout');
   }, [product, quantity, selectedVariants, addCartItem, navigation]);
 
+  const handleShare = useCallback(async () => {
+    if (!product) return;
+    try {
+      await Share.share({
+        message: `Check out ${product.name} on LotusMart — ${formatCurrency(product.price)}\nhttps://lotusmart.in/product/${product.slug ?? product._id}`,
+      });
+    } catch {
+      // user cancelled or share unavailable — ignore
+    }
+  }, [product]);
+
   const handleToggleWishlist = useCallback(() => {
     if (!product) return;
     heartScale.value = withSequence(
@@ -330,6 +342,7 @@ export function ProductDetailScreen() {
           <TouchableOpacity
             style={[styles.shareFloating, { backgroundColor: theme.colors.surface }]}
             activeOpacity={0.7}
+            onPress={handleShare}
           >
             <Ionicons name="share-outline" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
@@ -659,43 +672,51 @@ export function ProductDetailScreen() {
           </View>
         </CollapsibleSection>
 
-        {/* Nutrition Info */}
-        {product.nutritionInfo && (
-          <CollapsibleSection title="Nutrition Information">
-            <View style={{ paddingHorizontal: 16, gap: 6 }}>
-              {product.nutritionInfo.servingSize && (
-                <NutritionRow label="Serving Size" value={product.nutritionInfo.servingSize} />
-              )}
-              {product.nutritionInfo.calories != null && (
-                <NutritionRow label="Calories" value={`${product.nutritionInfo.calories} kcal`} />
-              )}
-              {product.nutritionInfo.protein != null && (
-                <NutritionRow label="Protein" value={`${product.nutritionInfo.protein}g`} />
-              )}
-              {product.nutritionInfo.totalFat != null && (
-                <NutritionRow label="Total Fat" value={`${product.nutritionInfo.totalFat}g`} />
-              )}
-              {product.nutritionInfo.totalCarbohydrates != null && (
-                <NutritionRow
-                  label="Total Carbs"
-                  value={`${product.nutritionInfo.totalCarbohydrates}g`}
-                />
-              )}
-              {product.nutritionInfo.dietaryFiber != null && (
-                <NutritionRow
-                  label="Dietary Fiber"
-                  value={`${product.nutritionInfo.dietaryFiber}g`}
-                />
-              )}
-              {product.nutritionInfo.sugars != null && (
-                <NutritionRow label="Sugars" value={`${product.nutritionInfo.sugars}g`} />
-              )}
-              {product.nutritionInfo.sodium != null && (
-                <NutritionRow label="Sodium" value={`${product.nutritionInfo.sodium}mg`} />
-              )}
-            </View>
-          </CollapsibleSection>
-        )}
+        {/* Nutrition Info — only when at least one value is present */}
+        {product.nutritionInfo &&
+          (product.nutritionInfo.servingSize != null ||
+            product.nutritionInfo.calories != null ||
+            product.nutritionInfo.protein != null ||
+            product.nutritionInfo.totalFat != null ||
+            product.nutritionInfo.totalCarbohydrates != null ||
+            product.nutritionInfo.dietaryFiber != null ||
+            product.nutritionInfo.sugars != null ||
+            product.nutritionInfo.sodium != null) && (
+            <CollapsibleSection title="Nutrition Information">
+              <View style={{ paddingHorizontal: 16, gap: 6 }}>
+                {product.nutritionInfo.servingSize && (
+                  <NutritionRow label="Serving Size" value={product.nutritionInfo.servingSize} />
+                )}
+                {product.nutritionInfo.calories != null && (
+                  <NutritionRow label="Calories" value={`${product.nutritionInfo.calories} kcal`} />
+                )}
+                {product.nutritionInfo.protein != null && (
+                  <NutritionRow label="Protein" value={`${product.nutritionInfo.protein}g`} />
+                )}
+                {product.nutritionInfo.totalFat != null && (
+                  <NutritionRow label="Total Fat" value={`${product.nutritionInfo.totalFat}g`} />
+                )}
+                {product.nutritionInfo.totalCarbohydrates != null && (
+                  <NutritionRow
+                    label="Total Carbs"
+                    value={`${product.nutritionInfo.totalCarbohydrates}g`}
+                  />
+                )}
+                {product.nutritionInfo.dietaryFiber != null && (
+                  <NutritionRow
+                    label="Dietary Fiber"
+                    value={`${product.nutritionInfo.dietaryFiber}g`}
+                  />
+                )}
+                {product.nutritionInfo.sugars != null && (
+                  <NutritionRow label="Sugars" value={`${product.nutritionInfo.sugars}g`} />
+                )}
+                {product.nutritionInfo.sodium != null && (
+                  <NutritionRow label="Sodium" value={`${product.nutritionInfo.sodium}mg`} />
+                )}
+              </View>
+            </CollapsibleSection>
+          )}
 
         {/* Specifications */}
         <CollapsibleSection title="Specifications">
@@ -704,7 +725,27 @@ export function ProductDetailScreen() {
             {product.productType && <NutritionRow label="Type" value={product.productType} />}
             {product.unit && <NutritionRow label="Unit" value={product.unit} />}
             {product.tags && product.tags.length > 0 && (
-              <NutritionRow label="Tags" value={product.tags.join(', ')} />
+              <View style={{ paddingVertical: 5, gap: 4 }}>
+                <Text
+                  style={{
+                    color: theme.colors.textSecondary,
+                    fontSize: 14,
+                    fontFamily: FONTS.body.regular,
+                  }}
+                >
+                  Tags
+                </Text>
+                <Text
+                  style={{
+                    color: theme.colors.text,
+                    fontSize: 14,
+                    fontFamily: FONTS.body.medium,
+                    lineHeight: 20,
+                  }}
+                >
+                  {product.tags.join(', ')}
+                </Text>
+              </View>
             )}
           </View>
         </CollapsibleSection>
@@ -737,7 +778,7 @@ export function ProductDetailScreen() {
           </Text>
         </View>
         <View style={styles.stickyActions}>
-          <Animated.View style={[cartBtnAnimStyle, { flex: 1 }]}>
+          <Animated.View style={cartBtnAnimStyle}>
             <TouchableOpacity
               style={[styles.stickyCartBtn, { borderColor: COLORS.rose }]}
               onPress={handleAddToCart}

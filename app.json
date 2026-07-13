@@ -29,12 +29,31 @@
         "backgroundColor": "#FFFDF7"
       },
       "package": "in.lotusmart.app",
-      "versionCode": 101,
+      "versionCode": 102,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "lotusmart.in",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "www.lotusmart.in",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ],
       "config": {
         "googleMaps": {
@@ -54,7 +73,8 @@
           "locationAlwaysAndWhenInUsePermission": "LotusMart uses your location to auto-fill your delivery address so you can check out faster."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
     ],
     "owner": "lotussss",
     "extra": {

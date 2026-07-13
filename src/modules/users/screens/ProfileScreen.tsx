@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Image,
   Modal as RNModal,
   TextInput,
@@ -46,12 +45,15 @@ export default function ProfileScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   const handleLogout = useCallback(() => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => logoutMutation.mutate() },
-    ]);
+    setLogoutOpen(true);
+  }, []);
+
+  const confirmLogout = useCallback(() => {
+    setLogoutOpen(false);
+    logoutMutation.mutate();
   }, [logoutMutation]);
 
   const handleConfirmDelete = useCallback(() => {
@@ -411,6 +413,44 @@ export default function ProfileScreen() {
           LotusMart v1.0.0
         </Text>
       </ScrollView>
+
+      <RNModal
+        visible={logoutOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconWrap, { backgroundColor: theme.colors.error + '18' }]}>
+                <Ionicons name="log-out-outline" size={20} color={theme.colors.error} />
+              </View>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Logout?</Text>
+            </View>
+            <Text style={[styles.modalBody, { color: theme.colors.textSecondary }]}>
+              Are you sure you want to log out of your account?
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={() => setLogoutOpen(false)}
+                style={[styles.modalBtn, { borderColor: theme.colors.border }]}
+              >
+                <Text style={[styles.modalBtnText, { color: theme.colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmLogout}
+                style={[
+                  styles.modalBtn,
+                  { backgroundColor: theme.colors.error, borderColor: theme.colors.error },
+                ]}
+              >
+                <Text style={[styles.modalBtnText, { color: '#FFFFFF' }]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </RNModal>
 
       <RNModal
         visible={deleteOpen}
