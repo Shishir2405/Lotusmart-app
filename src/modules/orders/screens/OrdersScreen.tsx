@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, SafeAreaView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Skeleton, Button } from '../../../components/ui';
@@ -91,7 +92,7 @@ export default function OrdersScreen() {
           <View
             style={[styles.illustrationCircle, { backgroundColor: theme.colors.primary + '12' }]}
           >
-            <Text style={styles.illustrationIcon}>📦</Text>
+            <Ionicons name="cube-outline" size={44} color={theme.colors.primary} />
           </View>
           <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No orders yet</Text>
           <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>

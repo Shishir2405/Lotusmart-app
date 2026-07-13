@@ -12,7 +12,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { FONTS } from '../../config/fonts';
 import { useToast } from './Toast';
 import { useGoogleAuth } from '../../modules/auth/hooks';
-import { useGoogleIdToken } from '../../services/googleAuth';
+import { signInWithGoogle } from '../../services/googleAuth';
 
 interface Props {
   label?: string;
@@ -48,8 +48,12 @@ export function GoogleSignInButton({ label = 'Continue with Google', onSignedIn,
   const { showToast } = useToast();
   const googleAuthMutation = useGoogleAuth();
 
-  const handleIdToken = useCallback(
-    (idToken: string) => {
+  const loading = googleAuthMutation.isPending;
+  const disabled = loading;
+
+  const onPress = useCallback(async () => {
+    try {
+      const idToken = await signInWithGoogle();
       googleAuthMutation.mutate(idToken, {
         onSuccess: (res) => {
           const { isNew, profileComplete } = res.data!;
@@ -64,29 +68,12 @@ export function GoogleSignInButton({ label = 'Continue with Google', onSignedIn,
           showToast('error', message);
         },
       });
-    },
-    [googleAuthMutation, onSignedIn, showToast],
-  );
-
-  const handleError = useCallback(
-    (message: string) => {
-      showToast('error', message);
-    },
-    [showToast],
-  );
-
-  const { request, promptAsync, isConfigured } = useGoogleIdToken(handleIdToken, handleError);
-
-  const loading = googleAuthMutation.isPending;
-  const disabled = !request || !isConfigured || loading;
-
-  const onPress = async () => {
-    if (!isConfigured) {
-      showToast('error', 'Google Sign-In is not set up for this build. Please use email login.');
-      return;
+    } catch (e) {
+      const err = e as { message?: string };
+      if (err?.message === 'CANCELLED') return; // user dismissed the picker
+      showToast('error', err?.message || 'Google sign-in failed. Please try again.');
     }
-    await promptAsync();
-  };
+  }, [googleAuthMutation, onSignedIn, showToast]);
 
   return (
     <TouchableOpacity
