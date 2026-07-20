@@ -19,6 +19,7 @@ import PolicyScreen from '../../modules/site-config/screens/PolicyScreen';
 import ContactScreen from '../../modules/site-config/screens/ContactScreen';
 import BlogListScreen from '../../modules/blog/screens/BlogListScreen';
 import BlogDetailScreen from '../../modules/blog/screens/BlogDetailScreen';
+import { ReelsScreen } from '../../modules/reels/screens/ReelsScreen';
 import { RootStackParamList } from './types';
 import { FONTS } from '../../config/fonts';
 
@@ -100,6 +101,17 @@ export function RootNavigator() {
         options={{
           title: 'Checkout',
           animation: 'slide_from_right',
+        }}
+      />
+
+      {/* Watch & Buy reels — immersive full-screen feed with its own back button */}
+      <Stack.Screen
+        name="Reels"
+        component={ReelsScreen}
+        options={{
+          headerShown: false,
+          animation: 'fade_from_bottom',
+          animationDuration: 250,
         }}
       />
 

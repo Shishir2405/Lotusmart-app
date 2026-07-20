@@ -28,6 +28,7 @@ import type { FAQItem } from '../../site-config/api';
 import { ProductCard } from '../components/ProductCard';
 import { ProductListSkeleton } from '../components/ProductListSkeleton';
 import { DealsCollections } from '../components/DealsCollections';
+import { WatchAndBuyCarousel } from '../../reels/components/WatchAndBuyCarousel';
 import { HomeHeader } from '../../../components/shared/HomeHeader';
 import { IProduct, ICategory } from '../../../types';
 import { RootStackParamList } from '../../../app/navigation/types';
@@ -507,7 +508,7 @@ function WhyChooseUsSection() {
     {
       icon: 'star' as const,
       title: '4.9\u2605 Rated',
-      desc: '50K+ happy customers',
+      desc: '5K+ happy customers',
       color: '#D97706',
     },
     {
@@ -545,10 +546,9 @@ function WhyChooseUsSection() {
         ]}
       >
         {[
-          { value: '50K+', label: 'Orders' },
           { value: '4.9\u2605', label: 'Rating' },
           { value: '200+', label: 'Products' },
-          { value: '7yr', label: 'In Business' },
+          { value: '26yr', label: 'In Business' },
         ].map((stat, i) => (
           <View key={i} style={whyStyles.statItem}>
             <Text style={[whyStyles.statValue, { color: theme.colors.primary }]}>{stat.value}</Text>
@@ -601,13 +601,16 @@ const whyStyles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 16,
   },
+  // flex:1 gives each stat an exact equal share of the row, so the strip stays
+  // evenly spaced whatever the number of stats or the width of their labels.
   statItem: {
+    flex: 1,
     alignItems: 'center',
   },
   statValue: {
@@ -950,6 +953,12 @@ export function HomeScreen() {
             />
           )}
         </View>
+
+        {/* Watch & Buy shoppable reels.
+            Deliberately NOT wrapped in a spacer View: the section renders null
+            when there are no reels, and it carries its own top margin so that
+            case leaves no empty gap. */}
+        <WatchAndBuyCarousel />
 
         {/* Deals & Collections */}
         <View style={{ marginTop: 32 }}>

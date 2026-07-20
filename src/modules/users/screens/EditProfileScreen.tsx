@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,18 +29,35 @@ import { COLORS } from '../../../config/constants';
 
 const editProfileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  phone: z
-    .string()
-    .min(10, 'Phone number must be at least 10 digits')
-    .max(15, 'Phone number must be at most 15 digits')
-    .regex(/^[+]?[\d\s-]+$/, 'Please enter a valid phone number'),
+  // Same rule the address form already enforces: a 10-digit Indian mobile.
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
 });
 
 type EditProfileForm = z.infer<typeof editProfileSchema>;
 
+/**
+ * Reduce anything typed or pasted to the bare 10-digit mobile number, so
+ * "+91 98260 40276" and "098260 40276" both normalise to "9826040276" instead
+ * of failing validation.
+ */
+const toTenDigits = (value: string) => {
+  let digits = value.replace(/\D/g, '');
+  // Only strip a country code / trunk prefix when the value is too long, so a
+  // legitimate number that happens to start with 91 or 0 is left alone.
+  if (digits.length > 10 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length > 10 && digits.startsWith('0')) digits = digits.slice(1);
+  return digits.slice(0, 10);
+};
+
+// Default native-stack header height. Combined with the top safe-area inset this
+// is the distance from the top of the window to the top of KeyboardAvoidingView,
+// which is exactly the offset RN needs to lift the form by the right amount.
+const IOS_HEADER_HEIGHT = 44;
+
 export default function EditProfileScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const user = useAuthStore((s) => s.user);
   const updateProfile = useUpdateProfile();
@@ -57,7 +74,9 @@ export default function EditProfileScreen() {
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
       name: user?.name ?? '',
-      phone: user?.phone ?? '',
+      // Normalise stored values (older accounts may hold "+91…") so the form
+      // does not open in an already-invalid state.
+      phone: toTenDigits(user?.phone ?? ''),
     },
   });
 
@@ -153,12 +172,20 @@ export default function EditProfileScreen() {
       edges={['bottom']}
     >
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+        // `undefined` on Android left the keyboard overlaying the form: with
+        // edge-to-edge (default from Expo SDK 54) the window no longer resizes
+        // on its own, so nothing lifted the fields or the Save button. `height`
+        // is the pattern the working auth screens already use.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // RN measures this view relative to its parent, so it cannot see the
+        // navigation header above it and under-lifts by exactly that much.
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + IOS_HEADER_HEIGHT : 0}
       >
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* Avatar */}
@@ -213,6 +240,7 @@ export default function EditProfileScreen() {
                   placeholder="Enter your full name"
                   autoCapitalize="words"
                   autoComplete="name"
+                  returnKeyType="next"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -271,9 +299,16 @@ export default function EditProfileScreen() {
                   label="Phone Number"
                   placeholder="10-digit mobile number"
                   keyboardType="phone-pad"
+                  textContentType="telephoneNumber"
                   autoComplete="tel"
+                  // No native `maxLength`: it truncates a *paste* before
+                  // onChangeText runs, so "+91 98260 40276" would arrive
+                  // clipped. toTenDigits is the cap instead — the controlled
+                  // value is never longer than 10 digits.
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit(onSubmit)}
                   value={value}
-                  onChangeText={onChange}
+                  onChangeText={(text) => onChange(toTenDigits(text))}
                   onBlur={onBlur}
                   error={errors.phone?.message}
                   leftIcon={
@@ -314,8 +349,11 @@ export default function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  flex: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: 20, paddingBottom: 40 },
+  // flexGrow keeps the form filling the viewport; the roomy bottom padding keeps
+  // the Save button scrollable clear of the keyboard.
+  content: { flexGrow: 1, padding: 20, paddingBottom: 48 },
   avatarSection: { alignItems: 'center', marginBottom: 28 },
   avatarWrap: { position: 'relative', marginBottom: 10 },
   avatarImage: {
