@@ -22,6 +22,7 @@ export type RootStackParamList = {
   Contact: undefined;
   BlogList: undefined;
   BlogDetail: { slug: string; title?: string };
+  Reels: { initialReelId?: string } | undefined;
   Policy: { type: 'terms' | 'privacy-policy' | 'refund-policy' | 'shipping-policy' };
 };
 

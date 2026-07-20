@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +16,7 @@ import CategoriesScreen from '../../modules/products/screens/CategoriesScreen';
 import CartScreen from '../../modules/cart/screens/CartScreen';
 import OrdersScreen from '../../modules/orders/screens/OrdersScreen';
 import ProfileScreen from '../../modules/users/screens/ProfileScreen';
+import { WhatsAppFab } from '../../components/shared/WhatsAppFab';
 import { useCartStore } from '../../store/cart.store';
 import { useAuthStore } from '../../store/auth.store';
 import { useTheme } from '../../theme/ThemeContext';
@@ -284,22 +285,37 @@ function LoginPromptScreen() {
 
 export function MainTabNavigator() {
   const user = useAuthStore((state) => state.user);
+  const [activeTab, setActiveTab] = useState<string>('HomeTab');
 
   return (
-    <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tab.Screen name="HomeTab" component={HomeScreen} />
-      <Tab.Screen name="CategoriesTab" component={CategoriesScreen} />
-      <Tab.Screen name="CartTab" component={CartScreen} />
-      <Tab.Screen name="OrdersTab" component={user ? OrdersScreen : LoginPromptScreen} />
-      <Tab.Screen name="ProfileTab" component={user ? ProfileScreen : LoginPromptScreen} />
-    </Tab.Navigator>
+    <View style={styles.tabsRoot}>
+      <Tab.Navigator
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{ headerShown: false }}
+        screenListeners={{
+          state: (e) => {
+            const navState = (e.data as { state?: { index: number; routeNames: string[] } })?.state;
+            const name = navState?.routeNames?.[navState.index];
+            if (name) setActiveTab(name);
+          },
+        }}
+      >
+        <Tab.Screen name="HomeTab" component={HomeScreen} />
+        <Tab.Screen name="CategoriesTab" component={CategoriesScreen} />
+        <Tab.Screen name="CartTab" component={CartScreen} />
+        <Tab.Screen name="OrdersTab" component={user ? OrdersScreen : LoginPromptScreen} />
+        <Tab.Screen name="ProfileTab" component={user ? ProfileScreen : LoginPromptScreen} />
+      </Tab.Navigator>
+      {/* Hidden on the cart tab so it never covers the checkout CTA. */}
+      <WhatsAppFab visible={activeTab !== 'CartTab'} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  tabsRoot: {
+    flex: 1,
+  },
   tabBar: {
     flexDirection: 'row',
     borderTopWidth: 1,

@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Keyboard,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,6 +61,32 @@ const LABELS: { value: AddressLabel; label: string; icon: keyof typeof Ionicons.
   { value: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' },
 ];
 
+/** Keep only digits, capped at `max`, so a pasted pincode can't fail `validate`. */
+const onlyDigits = (value: string, max: number) => value.replace(/\D/g, '').slice(0, max);
+
+/**
+ * Normalise a pasted or typed mobile number to the bare 10 digits `validate`
+ * expects, so "+91 98260 40276" and "098260 40276" both become "9826040276".
+ */
+const toTenDigits = (value: string) => {
+  let digits = value.replace(/\D/g, '');
+  // Only strip a country code / trunk prefix when the value is too long, so a
+  // legitimate number that happens to start with 91 or 0 is left alone.
+  if (digits.length > 10 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length > 10 && digits.startsWith('0')) digits = digits.slice(1);
+  return digits.slice(0, 10);
+};
+
+/** Modal chrome above/below the scrollable form: handle, title bar and padding. */
+const MODAL_CHROME = 170;
+
+type MutationError = Error & { response?: { data?: { message?: string } } };
+
+const serverMessage = (error: unknown, fallback: string) => {
+  const e = error as MutationError | undefined;
+  return e?.response?.data?.message || e?.message || fallback;
+};
+
 export default function AddressesScreen() {
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -70,9 +99,34 @@ export default function AddressesScreen() {
   const [editingAddress, setEditingAddress] = useState<IAddress | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  // Toasts render at the app root, which sits *behind* the native modal window,
+  // so a failed save looked silent. Keep the reason inline in the sheet too.
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const { height: windowHeight } = useWindowDimensions();
 
   const addresses: IAddress[] = addressesResponse?.data ?? [];
   const showSkeleton = useLoadingCap(isLoading && addresses.length === 0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) =>
+      setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  // The shared Modal only lifts itself on iOS (its KeyboardAvoidingView uses
+  // `padding` there and nothing on Android), so on Android we shrink the form's
+  // scroll area by the keyboard height to keep fields and buttons reachable.
+  const keyboardInset = Platform.OS === 'android' ? keyboardHeight : 0;
+  const formMaxHeight = Math.min(620, Math.max(240, windowHeight - keyboardInset - MODAL_CHROME));
 
   useEffect(() => {
     if (!modalVisible) return;
@@ -94,6 +148,7 @@ export default function AddressesScreen() {
       setForm(EMPTY);
     }
     setErrors({});
+    setSubmitError(null);
   }, [modalVisible, editingAddress]);
 
   const setField = <K extends keyof FormState>(k: K, v: FormState[K]) => {
@@ -143,7 +198,9 @@ export default function AddressesScreen() {
   }, []);
 
   const onSubmit = useCallback(() => {
+    setSubmitError(null);
     if (!validate()) {
+      setSubmitError('Please fix the highlighted fields above.');
       showToast('error', 'Please fix the highlighted fields');
       return;
     }
@@ -169,7 +226,11 @@ export default function AddressesScreen() {
             showToast('success', 'Address updated');
             closeModal();
           },
-          onError: () => showToast('error', 'Failed to update address'),
+          onError: (error) => {
+            const message = serverMessage(error, 'Failed to update address');
+            setSubmitError(message);
+            showToast('error', message);
+          },
         },
       );
     } else {
@@ -178,7 +239,11 @@ export default function AddressesScreen() {
           showToast('success', 'Address added');
           closeModal();
         },
-        onError: () => showToast('error', 'Failed to add address'),
+        onError: (error) => {
+          const message = serverMessage(error, 'Failed to add address');
+          setSubmitError(message);
+          showToast('error', message);
+        },
       });
     }
   }, [form, editingAddress, updateAddress, createAddress, showToast, closeModal]);
@@ -367,9 +432,11 @@ export default function AddressesScreen() {
         title={editingAddress ? 'Edit Address' : 'Add New Address'}
       >
         <ScrollView
-          style={styles.modalScroll}
+          style={{ maxHeight: formMaxHeight }}
+          contentContainerStyle={styles.modalScrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <View
             style={[
@@ -413,10 +480,14 @@ export default function AddressesScreen() {
             label="Phone Number"
             placeholder="10-digit mobile number"
             value={form.phone}
-            onChangeText={(v) => setField('phone', v)}
+            onChangeText={(v) => setField('phone', toTenDigits(v))}
             error={errors.phone}
             keyboardType="phone-pad"
-            maxLength={10}
+            textContentType="telephoneNumber"
+            autoComplete="tel"
+            // See onlyDigits: a native maxLength would clip a formatted paste
+            // ("+91 98260 40276") before we get a chance to strip it.
+            returnKeyType="next"
           />
           <Input
             label="Address Line 1"
@@ -455,10 +526,11 @@ export default function AddressesScreen() {
             label="Pincode"
             placeholder="6-digit pincode"
             value={form.pincode}
-            onChangeText={(v) => setField('pincode', v)}
+            onChangeText={(v) => setField('pincode', onlyDigits(v, 6))}
             error={errors.pincode}
             keyboardType="number-pad"
-            maxLength={6}
+            autoComplete="postal-code"
+            returnKeyType="done"
           />
 
           <Text
@@ -528,6 +600,20 @@ export default function AddressesScreen() {
               Set as default address
             </Text>
           </TouchableOpacity>
+
+          {submitError ? (
+            <View style={[styles.submitError, { backgroundColor: theme.colors.error + '14' }]}>
+              <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+              <Text
+                style={[
+                  styles.submitErrorText,
+                  { color: theme.colors.error, fontFamily: FONTS.body.medium },
+                ]}
+              >
+                {submitError}
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.formButtons}>
             <View style={styles.formButtonWrapper}>
@@ -606,7 +692,17 @@ const styles = StyleSheet.create({
   skeletonContainer: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   skeletonCard: { padding: 16, borderWidth: 1 },
   skeletonRow: { marginBottom: 12 },
-  modalScroll: { maxHeight: 620 },
+  // The form's maxHeight is applied inline so it can shrink with the keyboard.
+  modalScrollContent: { paddingBottom: 8 },
+  submitError: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 14,
+  },
+  submitErrorText: { flex: 1, fontSize: 12, lineHeight: 18 },
   mapSection: {
     marginBottom: 14,
     borderRadius: 14,

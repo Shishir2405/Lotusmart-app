@@ -1,13 +1,6 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
@@ -35,9 +28,14 @@ const changePasswordSchema = z
 
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
+// Default native-stack header height; with the top safe-area inset this is the
+// distance from the window top to the top of the KeyboardAvoidingView.
+const IOS_HEADER_HEIGHT = 44;
+
 export default function ChangePasswordScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const changePassword = useChangePassword();
 
@@ -67,8 +65,7 @@ export default function ChangePasswordScreen() {
             navigation.goBack();
           },
           onError: (error: any) => {
-            const message =
-              error?.response?.data?.message ?? 'Failed to change password';
+            const message = error?.response?.data?.message ?? 'Failed to change password';
             showToast('error', message);
           },
         },
@@ -84,33 +81,25 @@ export default function ChangePasswordScreen() {
     >
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+        // Matches the working auth screens: `undefined` on Android does nothing
+        // now that edge-to-edge stops the window from resizing by itself.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // Was a hard-coded 88; derive it so the lift is right on every device.
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + IOS_HEADER_HEIGHT : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           {/* Icon Header */}
           <View style={styles.iconSection}>
-            <View
-              style={[
-                styles.iconContainer,
-                { backgroundColor: theme.colors.primary + '14' },
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={36}
-                color={theme.colors.primary}
-              />
+            <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary + '14' }]}>
+              <Ionicons name="lock-closed-outline" size={36} color={theme.colors.primary} />
             </View>
             <Text
-              style={[
-                styles.title,
-                { color: theme.colors.text, fontSize: theme.fontSizes.xl },
-              ]}
+              style={[styles.title, { color: theme.colors.text, fontSize: theme.fontSizes.xl }]}
             >
               Change Password
             </Text>
@@ -284,9 +273,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 24,
-    paddingBottom: 40,
+    paddingBottom: 48,
   },
   iconSection: {
     alignItems: 'center',
