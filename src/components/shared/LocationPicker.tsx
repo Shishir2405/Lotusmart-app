@@ -24,6 +24,7 @@ import {
   type PlacePrediction,
 } from '../../services/location';
 import { PermissionModal } from '../ui/PermissionModal';
+import { useLocationStore } from '../../store/location.store';
 
 export type LocationPickerValue = ParsedAddress;
 
@@ -45,12 +46,23 @@ function randomSessionToken() {
 
 export function LocationPicker({ initialValue, onChange }: Props) {
   const { theme } = useTheme();
+  const lastKnownAddress = useLocationStore((s) => s.lastKnownAddress);
+  const setLastKnownAddress = useLocationStore((s) => s.setLastKnownAddress);
+
+  // If the caller didn't already have a saved address (a fresh "add address"
+  // form), fall back to whatever we cached from the app-launch GPS prefetch —
+  // that's what lets the form autofill instantly instead of re-running GPS
+  // and reprompting for permission every time this screen opens.
+  const effectiveInitialValue = initialValue?.coordinates
+    ? initialValue
+    : (lastKnownAddress ?? initialValue);
+
   const mapRef = useRef<MapView | null>(null);
   const sessionTokenRef = useRef<string>(randomSessionToken());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const regionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastResolvedRef = useRef<{ lat: number; lng: number } | null>(
-    initialValue?.coordinates ?? null,
+    effectiveInitialValue?.coordinates ?? null,
   );
   const autoDetectedRef = useRef(false);
   const suppressRegionChangeRef = useRef(false);
@@ -63,10 +75,10 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   const [permissionModal, setPermissionModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(
-    initialValue?.coordinates ?? null,
+    effectiveInitialValue?.coordinates ?? null,
   );
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(
-    initialValue?.formattedAddress ?? null,
+    effectiveInitialValue?.formattedAddress ?? null,
   );
 
   const emit = useCallback(
@@ -77,8 +89,9 @@ export function LocationPicker({ initialValue, onChange }: Props) {
         setCenter(value.coordinates);
         lastResolvedRef.current = value.coordinates;
       }
+      setLastKnownAddress(value);
     },
-    [onChange],
+    [onChange, setLastKnownAddress],
   );
 
   const animateTo = useCallback((lat: number, lng: number) => {
@@ -121,10 +134,18 @@ export function LocationPicker({ initialValue, onChange }: Props) {
       return;
     }
     setSearching(true);
+    setError(null);
     debounceRef.current = setTimeout(async () => {
       try {
         const results = await placesAutocomplete(text, sessionTokenRef.current);
         setPredictions(results);
+      } catch {
+        // A real failure (bad API key, network, quota) — not just "no matches".
+        // Surface it so search doesn't look like it's silently doing nothing.
+        setPredictions([]);
+        setError(
+          "Address search isn't available right now. Drag the pin or use your current location instead.",
+        );
       } finally {
         setSearching(false);
       }
@@ -214,11 +235,19 @@ export function LocationPicker({ initialValue, onChange }: Props) {
     [resolveAndEmit],
   );
 
-  // Zomato-style: auto-detect on first mount when no initial value.
+  // Zomato-style: auto-detect on first mount when no initial value. If the
+  // app-launch prefetch already cached an address, emit that immediately
+  // instead — it fills the form's text inputs without another GPS round trip
+  // or permission prompt.
   useEffect(() => {
     if (autoDetectedRef.current) return;
     if (initialValue?.coordinates) return;
     autoDetectedRef.current = true;
+    if (lastKnownAddress?.coordinates) {
+      emit(lastKnownAddress);
+      if (lastKnownAddress.formattedAddress) setQuery(lastKnownAddress.formattedAddress);
+      return;
+    }
     (async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status === 'granted') {
@@ -231,16 +260,16 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   }, []);
 
   const initialRegion: Region = useMemo(() => {
-    if (initialValue?.coordinates) {
+    if (effectiveInitialValue?.coordinates) {
       return {
-        latitude: initialValue.coordinates.lat,
-        longitude: initialValue.coordinates.lng,
+        latitude: effectiveInitialValue.coordinates.lat,
+        longitude: effectiveInitialValue.coordinates.lng,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       };
     }
     return DEFAULT_REGION;
-  }, [initialValue?.coordinates]);
+  }, [effectiveInitialValue?.coordinates]);
 
   const mapsReady = Boolean(GOOGLE_MAPS_API_KEY);
 

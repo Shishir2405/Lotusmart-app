@@ -196,6 +196,13 @@ export interface PlacePrediction {
   secondaryText: string;
 }
 
+/**
+ * ZERO_RESULTS is a normal "nothing matches" outcome — resolves to [].
+ * Anything else (REQUEST_DENIED, INVALID_REQUEST, a network failure) means the
+ * search is actually broken, so it throws instead of returning [] silently.
+ * Otherwise a misconfigured API key looks identical to "no results" in the UI,
+ * which is exactly what was masking the referrer-restriction issue on this key.
+ */
 export async function placesAutocomplete(
   input: string,
   sessionToken: string,
@@ -207,16 +214,20 @@ export async function placesAutocomplete(
       sessionToken,
     )}&key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
   const res = await fetch(url);
-  if (!res.ok) return [];
+  if (!res.ok) throw new Error(`Places autocomplete request failed (${res.status})`);
   const data = (await res.json()) as {
     status: string;
+    error_message?: string;
     predictions?: Array<{
       place_id: string;
       description: string;
       structured_formatting?: { main_text: string; secondary_text: string };
     }>;
   };
-  if (data.status !== 'OK' || !data.predictions) return [];
+  if (data.status === 'ZERO_RESULTS') return [];
+  if (data.status !== 'OK' || !data.predictions) {
+    throw new Error(data.error_message ?? `Places autocomplete: ${data.status}`);
+  }
   return data.predictions.map((p) => ({
     placeId: p.place_id,
     description: p.description,
