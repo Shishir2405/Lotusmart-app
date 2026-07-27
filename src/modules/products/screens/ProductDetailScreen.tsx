@@ -339,6 +339,7 @@ export function ProductDetailScreen() {
               ) : (
                 <AppImage
                   source={{ uri: item.url }}
+                  contentFit="contain"
                   style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 0.85 }}
                 />
               )

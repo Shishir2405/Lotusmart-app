@@ -1290,6 +1290,8 @@ const styles = StyleSheet.create({
   cartItemImage: {
     width: 64,
     height: 64,
+    resizeMode: 'contain',
+    backgroundColor: '#F3F0EA',
   },
   cartItemInfo: {
     flex: 1,

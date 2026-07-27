@@ -174,7 +174,8 @@ const styles = StyleSheet.create({
     width: 85,
     height: 85,
     borderRadius: 10,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
+    backgroundColor: '#F3F0EA',
   },
   content: {
     flex: 1,

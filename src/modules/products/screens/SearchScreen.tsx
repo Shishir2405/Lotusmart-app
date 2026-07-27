@@ -64,7 +64,7 @@ export function SearchScreen() {
             activeOpacity={0.7}
             onPress={() => handleProductPress(item._id ?? '')}
           >
-            <AppImage source={{ uri: imageUri }} style={styles.productImage} />
+            <AppImage source={{ uri: imageUri }} contentFit="contain" style={styles.productImage} />
             <View style={styles.productInfo}>
               <Text
                 style={[
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
-  productImage: { width: 60, height: 60, borderRadius: 10 },
+  productImage: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#F3F0EA' },
   productInfo: { flex: 1, gap: 3 },
   productName: { fontSize: 15, lineHeight: 20 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

@@ -156,11 +156,13 @@ function ProductCardInner({ product, horizontal = false, index = 0 }: ProductCar
         <View style={styles.imageContainer}>
           <AppImage
             source={{ uri: product.images?.[0] }}
+            contentFit="contain"
             style={[
               styles.image,
               {
                 borderTopLeftRadius: theme.borderRadius.md,
                 borderTopRightRadius: theme.borderRadius.md,
+                backgroundColor: theme.colors.background,
               },
             ]}
           />

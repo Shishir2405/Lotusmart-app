@@ -246,6 +246,7 @@ export default function OrderDetailScreen() {
             >
               <Image
                 source={{ uri: item.image }}
+                resizeMode="contain"
                 style={[styles.itemImage, { backgroundColor: theme.colors.border }]}
               />
               <View style={styles.itemInfo}>

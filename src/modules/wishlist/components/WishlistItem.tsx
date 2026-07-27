@@ -1,11 +1,5 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../theme/ThemeContext';
 import { Card } from '../../../components/ui';
 import { formatCurrency } from '../../../utils/helpers';
@@ -36,35 +30,22 @@ function WishlistItemComponent({ item, onAddToCart, onRemove }: WishlistItemProp
         {/* Remove Button */}
         <TouchableOpacity
           onPress={handleRemove}
-          style={[
-            styles.removeButton,
-            { backgroundColor: theme.colors.error + '14' },
-          ]}
+          style={[styles.removeButton, { backgroundColor: theme.colors.error + '14' }]}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={[styles.removeIcon, { color: theme.colors.error }]}>
-            ✕
-          </Text>
+          <Text style={[styles.removeIcon, { color: theme.colors.error }]}>✕</Text>
         </TouchableOpacity>
 
         {/* Product Image */}
         <View style={styles.imageContainer}>
           <Image
             source={{ uri: item.image }}
-            style={[
-              styles.image,
-              { borderRadius: theme.borderRadius.sm },
-            ]}
+            style={[styles.image, { borderRadius: theme.borderRadius.sm }]}
           />
 
           {/* Out of Stock Overlay */}
           {!item.isInStock && (
-            <View
-              style={[
-                styles.outOfStockOverlay,
-                { borderRadius: theme.borderRadius.sm },
-              ]}
-            >
+            <View style={[styles.outOfStockOverlay, { borderRadius: theme.borderRadius.sm }]}>
               <View
                 style={[
                   styles.outOfStockBadge,
@@ -143,9 +124,7 @@ function WishlistItemComponent({ item, onAddToCart, onRemove }: WishlistItemProp
           style={[
             styles.addToCartButton,
             {
-              backgroundColor: item.isInStock
-                ? theme.colors.primary
-                : theme.colors.border,
+              backgroundColor: item.isInStock ? theme.colors.primary : theme.colors.border,
               borderRadius: theme.borderRadius.sm,
             },
           ]}
@@ -201,11 +180,12 @@ const styles = StyleSheet.create({
     height: 100,
     marginBottom: 8,
     position: 'relative',
+    backgroundColor: '#F3F0EA',
   },
   image: {
     width: 100,
     height: 100,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   outOfStockOverlay: {
     ...StyleSheet.absoluteFillObject,

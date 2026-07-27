@@ -103,7 +103,7 @@ function ReelProductCardInner({ product, styles, onPress }: ReelProductCardProps
       accessibilityLabel={`View ${product.name}`}
     >
       {image ? (
-        <AppImage source={{ uri: image }} style={styles.productImage} />
+        <AppImage source={{ uri: image }} contentFit="contain" style={styles.productImage} />
       ) : (
         <View style={[styles.productImage, styles.productImageFallback]}>
           <Ionicons name="image-outline" size={16} color="rgba(255,255,255,0.7)" />
@@ -162,7 +162,7 @@ function FloatingProductCardInner({
       accessibilityLabel={`View ${product.name}`}
     >
       {image ? (
-        <AppImage source={{ uri: image }} style={styles.floatingImage} />
+        <AppImage source={{ uri: image }} contentFit="contain" style={styles.floatingImage} />
       ) : (
         <View style={[styles.floatingImage, styles.productImageFallback]}>
           <Ionicons name="image-outline" size={16} color="rgba(255,255,255,0.7)" />

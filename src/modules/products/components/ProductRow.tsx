@@ -75,7 +75,7 @@ export function ProductRow({ product }: Props) {
     >
       <View style={styles.imageWrap}>
         {product.images?.[0] ? (
-          <AppImage source={{ uri: product.images[0] }} style={styles.image} />
+          <AppImage source={{ uri: product.images[0] }} contentFit="contain" style={styles.image} />
         ) : (
           <View style={[styles.image, styles.imageFallback]}>
             <Ionicons name="leaf-outline" size={22} color={COLORS.olive} />
