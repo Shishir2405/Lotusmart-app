@@ -110,6 +110,7 @@ export interface IProduct {
   description: string;
   shortDescription?: string;
   images: string[];
+  videos?: string[];
   category: ICategory | string;
   subcategory?: string;
   price: number;

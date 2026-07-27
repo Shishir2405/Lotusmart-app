@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import { useTheme } from '../../../theme/ThemeContext';
 import { Badge, Skeleton } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
 import { EmptyState } from '../../../components/shared/EmptyState';
+import { ProductVideoSlide } from '../components';
 import { useProduct } from '../hooks';
 import { useLoadingCap } from '../../../hooks/useLoadingCap';
 import { useCartStore } from '../../../store/cart.store';
@@ -255,6 +256,18 @@ export function ProductDetailScreen() {
     setQuantity((q) => Math.max(q - 1, min));
   }, [product]);
 
+  // Photos and videos share one swipeable carousel: photos first, then
+  // videos, so the dots/index logic below doesn't need to know which is which.
+  // Computed before the loading/error early return below so this hook always
+  // runs in the same order regardless of whether `product` has loaded yet.
+  const media = useMemo(
+    () => [
+      ...(product?.images ?? []).map((url) => ({ type: 'image' as const, url })),
+      ...(product?.videos ?? []).map((url) => ({ type: 'video' as const, url })),
+    ],
+    [product],
+  );
+
   // ====== LOADING / ERROR STATE ======
   if (!product) {
     if (showSkeleton) {
@@ -308,19 +321,28 @@ export function ProductDetailScreen() {
         <View style={styles.imageSection}>
           <FlatList
             ref={imageListRef}
-            data={product.images}
+            data={media}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
-            keyExtractor={(_, i) => `img-${i}`}
-            renderItem={({ item: uri }) => (
-              <AppImage
-                source={{ uri }}
-                style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 0.85 }}
-              />
-            )}
+            keyExtractor={(item, i) => `${item.type}-${i}`}
+            renderItem={({ item, index }) =>
+              item.type === 'video' ? (
+                <ProductVideoSlide
+                  uri={item.url}
+                  width={SCREEN_WIDTH}
+                  height={SCREEN_WIDTH * 0.85}
+                  isActive={index === activeImageIndex}
+                />
+              ) : (
+                <AppImage
+                  source={{ uri: item.url }}
+                  style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 0.85 }}
+                />
+              )
+            }
           />
 
           {/* Wishlist floating button */}
@@ -348,9 +370,9 @@ export function ProductDetailScreen() {
           </TouchableOpacity>
 
           {/* Image indicators */}
-          {product.images.length > 1 && (
+          {media.length > 1 && (
             <View style={styles.dotsContainer}>
-              {product.images.map((_, index) => (
+              {media.map((_, index) => (
                 <View
                   key={index}
                   style={[

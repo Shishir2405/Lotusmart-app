@@ -56,3 +56,24 @@ export function getPaymentStatusColor(status: string): string {
 export function generateCartItemKey(productId: string, variant?: string): string {
   return variant ? `${productId}-${variant}` : productId;
 }
+
+/**
+ * Derive a poster image (first frame) from a Cloudinary VIDEO url:
+ *   .../video/upload/<rest>/name.mp4  ->  .../video/upload/so_0/<rest>/name.jpg
+ * so_0 seeks to the first frame and renders it as a still, which lets a video
+ * slide show real artwork instead of a black box before playback starts.
+ * Returns null when the url isn't a Cloudinary video delivery url.
+ */
+export function videoPosterUrl(videoUrl: string): string | null {
+  if (typeof videoUrl !== 'string') return null;
+  const marker = '/video/upload/';
+  const idx = videoUrl.indexOf(marker);
+  if (idx === -1) return null;
+
+  const prefix = videoUrl.slice(0, idx + marker.length);
+  let rest = videoUrl.slice(idx + marker.length);
+
+  rest = rest.includes('.') ? rest.replace(/\.[^./?]+(\?.*)?$/, '.jpg') : `${rest}.jpg`;
+
+  return `${prefix}so_0/${rest}`;
+}
