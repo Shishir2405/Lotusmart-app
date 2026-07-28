@@ -29,7 +29,7 @@
         "backgroundColor": "#FFFDF7"
       },
       "package": "in.lotusmart.app",
-      "versionCode": 111,
+      "versionCode": 115,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
