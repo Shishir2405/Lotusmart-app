@@ -100,47 +100,47 @@ async function fetchNearbyLandmark(lat: number, lng: number): Promise<string | u
 
 export async function reverseGeocodeGoogle(lat: number, lng: number): Promise<ParsedAddress> {
   if (!GOOGLE_MAPS_API_KEY) throw new Error('Missing Google Maps API key');
-  const url =
-    `https://maps.googleapis.com/maps/api/geocode/json?` +
-    `latlng=${lat},${lng}&result_type=street_address|premise|subpremise|route|point_of_interest&key=${encodeURIComponent(
-      GOOGLE_MAPS_API_KEY,
-    )}`;
-  let res = await fetch(url);
-  let data = (await res.json()) as {
+
+  // Unfiltered request to get the absolute most precise location first
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
+  const res = await fetch(url);
+  const data = (await res.json()) as {
     status: string;
     results: GeocodeResult[];
   };
 
-  if (data.status === 'ZERO_RESULTS' || !data.results?.length) {
-    // Fall back to an unfiltered request so we still get *something*.
-    const fallbackUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${encodeURIComponent(
-      GOOGLE_MAPS_API_KEY,
-    )}`;
-    res = await fetch(fallbackUrl);
-    data = (await res.json()) as typeof data;
-  }
   if (!res.ok) throw new Error('Google geocode failed');
-  if (data.status !== 'OK' || !data.results.length) {
+  if (data.status !== 'OK' || !data.results?.length) {
     throw new Error(`Google geocode: ${data.status}`);
   }
 
-  const best = pickBestResult(data.results);
+  // Pick the most specific result that isn't just a plus code
+  const best = data.results.find((r) => !r.types?.includes('plus_code')) || data.results[0];
   const parsed = parseGoogleComponents(best.address_components);
 
-  // If no street info came back, try to enrich addressLine1 with the nearest named landmark.
   let addressLine1 = parsed.addressLine1;
   let addressLine2 = parsed.addressLine2;
-  if (!addressLine1) {
-    const landmark = await fetchNearbyLandmark(lat, lng);
-    if (landmark) {
-      addressLine1 = landmark;
+
+  // Use the formatted address chunks if our component parsing was too sparse
+  const parts = best.formatted_address.split(',').map((s) => s.trim());
+  const cityIndex = parts.findIndex((p) => parsed.city && p.includes(parsed.city));
+
+  if (!addressLine1 || addressLine1.length < 4) {
+    if (cityIndex > 0) {
+      addressLine1 = parts[0];
+      if (cityIndex > 1) {
+        addressLine2 = parts.slice(1, cityIndex).join(', ');
+      }
     } else {
-      // Use the first chunk of the formatted address (often street-level).
-      addressLine1 = best.formatted_address.split(',')[0]?.trim() || undefined;
+      addressLine1 = parts[0] || undefined;
+      addressLine2 = parts[1] || undefined;
     }
-  } else if (!addressLine2) {
+  }
+
+  // Enrich with landmark if still very sparse
+  if (!addressLine2) {
     const landmark = await fetchNearbyLandmark(lat, lng);
-    if (landmark && landmark !== addressLine1) {
+    if (landmark && landmark !== addressLine1 && !addressLine1?.includes(landmark)) {
       addressLine2 = `Near ${landmark}`;
     }
   }

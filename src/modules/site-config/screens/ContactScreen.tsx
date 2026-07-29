@@ -82,12 +82,19 @@ export default function ContactScreen() {
   const socials = useMemo(() => {
     const links = contact?.socialLinks ?? {};
     const out: { key: string; icon: keyof typeof Ionicons.glyphMap; url: string }[] = [];
-    if (links.instagram)
-      out.push({ key: 'instagram', icon: 'logo-instagram', url: links.instagram });
-    if (links.facebook) out.push({ key: 'facebook', icon: 'logo-facebook', url: links.facebook });
-    if (links.twitter) out.push({ key: 'twitter', icon: 'logo-twitter', url: links.twitter });
-    if (links.youtube) out.push({ key: 'youtube', icon: 'logo-youtube', url: links.youtube });
-    if (links.whatsapp) out.push({ key: 'whatsapp', icon: 'logo-whatsapp', url: links.whatsapp });
+
+    const isValid = (url: string | undefined) => url && url.trim() !== '' && url !== '#';
+
+    if (isValid(links.instagram))
+      out.push({ key: 'instagram', icon: 'logo-instagram', url: links.instagram! });
+    if (isValid(links.facebook))
+      out.push({ key: 'facebook', icon: 'logo-facebook', url: links.facebook! });
+    if (isValid(links.twitter))
+      out.push({ key: 'twitter', icon: 'logo-twitter', url: links.twitter! });
+    if (isValid(links.youtube))
+      out.push({ key: 'youtube', icon: 'logo-youtube', url: links.youtube! });
+    if (isValid(links.whatsapp))
+      out.push({ key: 'whatsapp', icon: 'logo-whatsapp', url: links.whatsapp! });
     return out;
   }, [contact?.socialLinks]);
 

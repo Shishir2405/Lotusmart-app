@@ -10,7 +10,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Region, MapPressEvent } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE, Region, MapPressEvent, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
@@ -23,7 +23,6 @@ import {
   type ParsedAddress,
   type PlacePrediction,
 } from '../../services/location';
-import { PermissionModal } from '../ui/PermissionModal';
 import { useLocationStore } from '../../store/location.store';
 
 export type LocationPickerValue = ParsedAddress;
@@ -72,7 +71,6 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   const [searching, setSearching] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [detectingGps, setDetectingGps] = useState(false);
-  const [permissionModal, setPermissionModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(
     effectiveInitialValue?.coordinates ?? null,
@@ -80,6 +78,7 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(
     effectiveInitialValue?.formattedAddress ?? null,
   );
+  const [useOSM, setUseOSM] = useState(false);
 
   const emit = useCallback(
     (value: LocationPickerValue) => {
@@ -173,14 +172,7 @@ export function LocationPicker({ initialValue, onChange }: Props) {
 
   const requestGps = async () => {
     setError(null);
-    const { status: current } = await Location.getForegroundPermissionsAsync();
-
-    if (current === 'granted') {
-      void runGps();
-      return;
-    }
-    // Pre-prompt with our own modal before the OS dialog.
-    setPermissionModal(true);
+    void runGps();
   };
 
   const runGps = useCallback(async () => {
@@ -248,14 +240,7 @@ export function LocationPicker({ initialValue, onChange }: Props) {
       if (lastKnownAddress.formattedAddress) setQuery(lastKnownAddress.formattedAddress);
       return;
     }
-    (async () => {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status === 'granted') {
-        void runGps();
-      } else {
-        setPermissionModal(true);
-      }
-    })();
+    void requestGps();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -406,20 +391,6 @@ export function LocationPicker({ initialValue, onChange }: Props) {
           <View style={styles.centerPinShadow} />
         </View>
 
-        {/* Floating "locate me" chip top-right */}
-        <TouchableOpacity
-          onPress={requestGps}
-          disabled={detectingGps}
-          activeOpacity={0.85}
-          style={[styles.locateChip, { backgroundColor: '#fff' }]}
-        >
-          {detectingGps ? (
-            <ActivityIndicator size="small" color={COLORS.rose} />
-          ) : (
-            <Ionicons name="locate" size={18} color={COLORS.rose} />
-          )}
-        </TouchableOpacity>
-
         {resolving && (
           <View style={styles.mapOverlay}>
             <ActivityIndicator size="small" color={COLORS.rose} />
@@ -463,22 +434,6 @@ export function LocationPicker({ initialValue, onChange }: Props) {
           <Text style={[styles.errorText, { fontFamily: FONTS.body.regular }]}>{error}</Text>
         </View>
       ) : null}
-
-      <PermissionModal
-        visible={permissionModal}
-        icon="locate-outline"
-        iconColor={COLORS.rose}
-        iconBackground={COLORS.roseLight}
-        title="Share your location?"
-        description="We use your location only to auto-fill your delivery address so checkout is faster. You can skip this and type it manually."
-        allowLabel="Use location"
-        denyLabel="Not now"
-        onAllow={() => {
-          setPermissionModal(false);
-          void runGps();
-        }}
-        onDeny={() => setPermissionModal(false)}
-      />
 
       {error?.includes('Settings') ? (
         <TouchableOpacity onPress={() => Linking.openSettings()} style={styles.settingsLink}>
