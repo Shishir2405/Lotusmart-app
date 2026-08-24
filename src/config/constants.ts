@@ -79,7 +79,14 @@ export const PAYMENT_METHODS = ['cod', 'razorpay'] as const;
 
 export const RAZORPAY_KEY = 'rzp_live_SiQTVNbS8pYQQ0';
 
+// Used by the native MapView (Android app-restricted — see app.json's googleMapsApiKey).
 export const GOOGLE_MAPS_API_KEY = 'AIzaSyCLGtTkBHAljKzHgZ7OFK5HG1rUXsM3MZs';
+
+// Used for direct REST calls (Geocoding, Places Autocomplete/Details, Nearby Search) in
+// services/location.ts. Must be a SEPARATE, unrestricted-by-app key (App restriction: None,
+// API restriction: Geocoding API + Places API only) — Android app-restricted keys can't
+// authenticate plain fetch() calls, only requests made through the native Maps SDK.
+export const GOOGLE_PLACES_API_KEY = 'AIzaSyCAnq6eZV0vaXVq70w-Ag-2NZ0kWrT2m5k';
 
 export const GOOGLE_WEB_CLIENT_ID =
   '585136700835-c111hlrpa1d8srsv35se1agec07btoc6.apps.googleusercontent.com';

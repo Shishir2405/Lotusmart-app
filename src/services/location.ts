@@ -1,4 +1,4 @@
-import { GOOGLE_MAPS_API_KEY } from '../config/constants';
+import { GOOGLE_PLACES_API_KEY } from '../config/constants';
 import { IGeoCoordinates } from '../types';
 
 export interface ParsedAddress {
@@ -60,13 +60,22 @@ type GeocodeResult = {
   types?: string[];
 };
 
-const PRECISION_RANK = [
+const PRECISE_TYPES = new Set([
   'subpremise',
   'premise',
   'street_address',
   'point_of_interest',
   'establishment',
   'route',
+]);
+
+const PRECISION_RANK = [
+  ...PRECISE_TYPES,
+  'neighborhood',
+  'sublocality_level_2',
+  'sublocality_level_1',
+  'sublocality',
+  'locality',
 ];
 
 function pickBestResult(results: GeocodeResult[]): GeocodeResult {
@@ -78,31 +87,38 @@ function pickBestResult(results: GeocodeResult[]): GeocodeResult {
 }
 
 async function fetchNearbyLandmark(lat: number, lng: number): Promise<string | undefined> {
-  if (!GOOGLE_MAPS_API_KEY) return undefined;
+  if (!GOOGLE_PLACES_API_KEY) return undefined;
   try {
     const url =
       `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
-      `location=${lat},${lng}&rankby=distance&key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
+      `location=${lat},${lng}&rankby=distance&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}`;
     const res = await fetch(url);
     if (!res.ok) return undefined;
     const data = (await res.json()) as {
       status: string;
+      error_message?: string;
       results?: Array<{ name: string; types: string[] }>;
     };
-    if (data.status !== 'OK' || !data.results?.length) return undefined;
+    if (data.status !== 'OK' || !data.results?.length) {
+      if (__DEV__ && data.status !== 'ZERO_RESULTS') {
+        console.warn('[location] nearbysearch failed:', data.status, data.error_message);
+      }
+      return undefined;
+    }
     const skip = new Set(['route', 'street_address', 'plus_code', 'geocode']);
     const named = data.results.find((r) => r.name && !r.types.every((t) => skip.has(t)));
     return named?.name;
-  } catch {
+  } catch (e) {
+    if (__DEV__) console.warn('[location] nearbysearch error:', e);
     return undefined;
   }
 }
 
 export async function reverseGeocodeGoogle(lat: number, lng: number): Promise<ParsedAddress> {
-  if (!GOOGLE_MAPS_API_KEY) throw new Error('Missing Google Maps API key');
+  if (!GOOGLE_PLACES_API_KEY) throw new Error('Missing Google Maps API key');
 
   // Unfiltered request to get the absolute most precise location first
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}`;
   const res = await fetch(url);
   const data = (await res.json()) as {
     status: string;
@@ -115,7 +131,8 @@ export async function reverseGeocodeGoogle(lat: number, lng: number): Promise<Pa
   }
 
   // Pick the most specific result that isn't just a plus code
-  const best = data.results.find((r) => !r.types?.includes('plus_code')) || data.results[0];
+  const candidates = data.results.filter((r) => !r.types?.includes('plus_code'));
+  const best = pickBestResult(candidates.length ? candidates : data.results);
   const parsed = parseGoogleComponents(best.address_components);
 
   let addressLine1 = parsed.addressLine1;
@@ -137,11 +154,13 @@ export async function reverseGeocodeGoogle(lat: number, lng: number): Promise<Pa
     }
   }
 
-  // Enrich with landmark if still very sparse
-  if (!addressLine2) {
+  // Enrich with a landmark whenever the best match Google gave us wasn't
+  // building/street precise — a nearby landmark beats a bare city/state string.
+  const isPrecise = best.types?.some((t) => PRECISE_TYPES.has(t)) ?? false;
+  if (!isPrecise) {
     const landmark = await fetchNearbyLandmark(lat, lng);
     if (landmark && landmark !== addressLine1 && !addressLine1?.includes(landmark)) {
-      addressLine2 = `Near ${landmark}`;
+      addressLine2 = addressLine2 ? `Near ${landmark}, ${addressLine2}` : `Near ${landmark}`;
     }
   }
 
@@ -179,7 +198,7 @@ export async function reverseGeocodeOSM(lat: number, lng: number): Promise<Parse
 }
 
 export async function reverseGeocode(lat: number, lng: number): Promise<ParsedAddress> {
-  if (GOOGLE_MAPS_API_KEY) {
+  if (GOOGLE_PLACES_API_KEY) {
     try {
       return await reverseGeocodeGoogle(lat, lng);
     } catch {
@@ -207,12 +226,12 @@ export async function placesAutocomplete(
   input: string,
   sessionToken: string,
 ): Promise<PlacePrediction[]> {
-  if (!GOOGLE_MAPS_API_KEY || input.trim().length < 2) return [];
+  if (!GOOGLE_PLACES_API_KEY || input.trim().length < 2) return [];
   const url =
     `https://maps.googleapis.com/maps/api/place/autocomplete/json?` +
     `input=${encodeURIComponent(input)}&components=country:in&sessiontoken=${encodeURIComponent(
       sessionToken,
-    )}&key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
+    )}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Places autocomplete request failed (${res.status})`);
   const data = (await res.json()) as {
@@ -240,12 +259,12 @@ export async function placeDetails(
   placeId: string,
   sessionToken: string,
 ): Promise<ParsedAddress | null> {
-  if (!GOOGLE_MAPS_API_KEY) return null;
+  if (!GOOGLE_PLACES_API_KEY) return null;
   const url =
     `https://maps.googleapis.com/maps/api/place/details/json?` +
     `place_id=${encodeURIComponent(placeId)}&fields=geometry,formatted_address,address_components&sessiontoken=${encodeURIComponent(
       sessionToken,
-    )}&key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
+    )}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = (await res.json()) as {

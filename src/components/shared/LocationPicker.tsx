@@ -15,7 +15,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
 import { FONTS } from '../../config/fonts';
-import { COLORS, GOOGLE_MAPS_API_KEY } from '../../config/constants';
+import { COLORS, GOOGLE_PLACES_API_KEY } from '../../config/constants';
 import {
   placeDetails,
   placesAutocomplete,
@@ -83,7 +83,11 @@ export function LocationPicker({ initialValue, onChange }: Props) {
   const emit = useCallback(
     (value: LocationPickerValue) => {
       onChange(value);
-      if (value.formattedAddress) setResolvedAddress(value.formattedAddress);
+      const assembled = [value.addressLine1, value.addressLine2, value.city]
+        .filter(Boolean)
+        .join(', ');
+      const display = assembled || value.formattedAddress;
+      if (display) setResolvedAddress(display);
       if (value.coordinates) {
         setCenter(value.coordinates);
         lastResolvedRef.current = value.coordinates;
@@ -256,7 +260,7 @@ export function LocationPicker({ initialValue, onChange }: Props) {
     return DEFAULT_REGION;
   }, [effectiveInitialValue?.coordinates]);
 
-  const mapsReady = Boolean(GOOGLE_MAPS_API_KEY);
+  const mapsReady = Boolean(GOOGLE_PLACES_API_KEY);
 
   return (
     <View style={styles.wrap}>
